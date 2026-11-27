@@ -191,6 +191,8 @@ void MainWindow::resizeEvent(QResizeEvent *event) {
 }
 
 void MainWindow::rebuildIcons() {
+ if (logoIcon_) logoIcon_->setPixmap(brandBadgeIcon(darkTheme_).pixmap(22, 22));
+ if (settingsIconBtn_) settingsIconBtn_->setIcon(workspaceIcon("settings", darkTheme_));
  for (const auto &k : QStringList{"new", "open", "save", "view-2d", "view-3d", "explode", "grid", "sun", "reset", "map", "section", "analysis", "export-png"}) {
   if (actions_.contains(k)) actions_[k]->setIcon(workspaceIcon(k, darkTheme_));
  }
@@ -335,6 +337,14 @@ void MainWindow::buildUi() {
  for (auto *a : {mapAction, flat, three, explode, grid, sunAction}) a->setCheckable(true);
  three->setChecked(true);
  viewMenu->addActions({mapAction, flat, three, explode, grid, sunAction, reset, sectionAction, analysisAction});
+ viewMenu->addSeparator();
+ auto *styleMenuAct = action("style-gallery", "Thư viện phong cách…", "Style gallery…");
+ auto *settingsMenuAct = action("settings", "Cài đặt không gian làm việc…", "Workspace settings…", QKeySequence("Ctrl+,"));
+ auto *paletteMenuAct = action("command-palette", "Bảng lệnh nhanh…", "Command palette…", QKeySequence("Ctrl+P"));
+ viewMenu->addActions({styleMenuAct, settingsMenuAct, paletteMenuAct});
+ connect(styleMenuAct, &QAction::triggered, this, &MainWindow::showStyleGallery);
+ connect(settingsMenuAct, &QAction::triggered, this, &MainWindow::showSettings);
+ connect(paletteMenuAct, &QAction::triggered, this, &MainWindow::showCommandPalette);
 
  // Hidden QComboBox("language") kept in sync with VI|EN pill for existing tests & accessibility
  language_ = new QComboBox(this);
@@ -353,39 +363,50 @@ void MainWindow::buildUi() {
  shellLayout->setSpacing(0);
  setCentralWidget(shell);
 
- // ── 1. 42px Compact Adobe Spectrum 2 Header Bar ──
+ // ── 1. 40px Ultra-Minimal Adobe Spectrum Monochrome Toolbar (zero duplicate menus!) ──
  auto *v2Header = new QWidget(shell);
  v2Header->setObjectName("v2-header");
- v2Header->setFixedHeight(42);
+ v2Header->setFixedHeight(40);
  auto *hdr = new QHBoxLayout(v2Header);
  hdr->setContentsMargins(12, 0, 12, 0);
  hdr->setSpacing(6);
 
- auto *logoIcon = new QLabel(v2Header);
- logoIcon->setPixmap(brandBadgeIcon().pixmap(22, 22));
- hdr->addWidget(logoIcon);
+ logoIcon_ = new QLabel(v2Header);
+ logoIcon_->setPixmap(brandBadgeIcon(false).pixmap(22, 22));
+ hdr->addWidget(logoIcon_);
  auto *brand = new QLabel("GroundAtlas", v2Header);
  brand->setObjectName("brand");
  hdr->addWidget(brand);
- auto *verBadge = new QLabel("2.3", v2Header);
- verBadge->setObjectName("v2-badge");
- hdr->addWidget(verBadge);
 
- auto addHeaderCmd = [&](const char *vi, const char *en, std::function<void()> fn) {
-  auto *b = new QPushButton(trText(vi, en), v2Header);
-  b->setObjectName("header-cmd");
-  translations_.append([=, this] { b->setText(trText(vi, en)); });
-  connect(b, &QPushButton::clicked, this, std::move(fn));
-  hdr->addWidget(b);
-  return b;
- };
- addHeaderCmd("Dự án", "Projects", [this, fileMenu] { fileMenu->exec(QCursor::pos()); });
- addHeaderCmd("Phong cách", "Styles", [this] { showStyleGallery(); });
- addHeaderCmd("Nguồn", "Source", [this] { showSource(); });
- addHeaderCmd("Mặt cắt", "Section", [this] { showSection(); });
- addHeaderCmd("Cài đặt", "Settings", [this] { showSettings(); });
- addHeaderCmd("⌘ Lệnh", "⌘ Commands", [this] { showCommandPalette(); });
- addHeaderCmd("Thông tin", "About", [this, about] { about->trigger(); });
+ hdr->addSpacing(4);
+ auto *cmdQuickBtn = new QPushButton(trText("⌘ Lệnh…", "⌘ Commands…"), v2Header);
+ cmdQuickBtn->setObjectName("header-cmd");
+ translations_.append([=, this] { cmdQuickBtn->setText(trText("⌘ Lệnh…", "⌘ Commands…")); });
+ connect(cmdQuickBtn, &QPushButton::clicked, this, &MainWindow::showCommandPalette);
+ hdr->addWidget(cmdQuickBtn);
+
+ settingsIconBtn_ = new QToolButton(v2Header);
+ settingsIconBtn_->setObjectName("header-icon");
+ settingsIconBtn_->setIcon(workspaceIcon("settings", false));
+ settingsIconBtn_->setIconSize(QSize(16, 16));
+ settingsIconBtn_->setFixedSize(28, 28);
+ translations_.append([=, this] { settingsIconBtn_->setToolTip(trText("Cài đặt hiệu năng & giao diện (Ctrl+,)", "Performance & workspace settings (Ctrl+,)")); });
+ settingsIconBtn_->setToolTip(trText("Cài đặt hiệu năng & giao diện (Ctrl+,)", "Performance & workspace settings (Ctrl+,)"));
+ connect(settingsIconBtn_, &QToolButton::clicked, this, &MainWindow::showSettings);
+ hdr->addWidget(settingsIconBtn_);
+
+ hdr->addStretch(1);
+
+ // Centered Map / 2D / 3D sliding segmented pill
+ auto *viewPill = new ux::SlidingPillTrack(v2Header);
+ segTracks_.append(viewPill);
+ for (auto *a : {mapAction, flat, three}) {
+  auto *b = new QToolButton(viewPill);
+  b->setDefaultAction(a);
+  b->setToolButtonStyle(Qt::ToolButtonTextOnly);
+  viewPill->addSegment(b);
+ }
+ hdr->addWidget(viewPill);
 
  hdr->addStretch(1);
 
@@ -403,24 +424,13 @@ void MainWindow::buildUi() {
  themePill->addSegment(themeDarkBtn_);
  connect(themeLightBtn_, &QToolButton::clicked, this, [this] {
   setDarkTheme(false);
-  showToast(trText("Giao diện Sáng · Spectrum Light", "Light Theme · Spectrum Light"), QColor("#3b63fb"));
+  showToast(trText("Giao diện Sáng · Spectrum Monochrome", "Light Theme · Spectrum Monochrome"), QColor("#131313"));
  });
  connect(themeDarkBtn_, &QToolButton::clicked, this, [this] {
   setDarkTheme(true);
-  showToast(trText("Giao diện Tối · Spectrum Dark", "Dark Theme · Spectrum Dark"), QColor("#4b75ff"));
+  showToast(trText("Giao diện Tối · Spectrum Dark", "Dark Theme · Spectrum Dark"), QColor("#f5f5f5"));
  });
  hdr->addWidget(themePill);
-
- // Map / 2D / 3D sliding segmented pill
- auto *viewPill = new ux::SlidingPillTrack(v2Header);
- segTracks_.append(viewPill);
- for (auto *a : {mapAction, flat, three}) {
-  auto *b = new QToolButton(viewPill);
-  b->setDefaultAction(a);
-  b->setToolButtonStyle(Qt::ToolButtonTextOnly);
-  viewPill->addSegment(b);
- }
- hdr->addWidget(viewPill);
 
  // Mô hình 3D (Export Studio modal)
  auto *model3dBtn = new QPushButton(trText("Xuất 3D", "Export 3D"), v2Header);
@@ -456,7 +466,7 @@ void MainWindow::buildUi() {
  // Update available pill (hidden unless Cloudflare reports latest_version > current)
  updatePillBtn_ = new QPushButton(QStringLiteral("↑ Update"), v2Header);
  updatePillBtn_->setObjectName("update-pill");
- updatePillBtn_->setStyleSheet("QPushButton{background:#3b63fb;color:#ffffff;border:none;border-radius:14px;padding:4px 10px;font-weight:600;font-size:11px;} QPushButton:hover{background:#274dea;}");
+ updatePillBtn_->setStyleSheet("QPushButton{background:#3b63fb;color:#ffffff;border:none;border-radius:13px;min-height:18px;padding:4px 10px;font-weight:600;font-size:11px;} QPushButton:hover{background:#274dea;}");
  updatePillBtn_->hide();
  connect(updatePillBtn_, &QPushButton::clicked, this, [this] { showUpdateDialog(true); });
  hdr->addWidget(updatePillBtn_);
@@ -467,7 +477,7 @@ void MainWindow::buildUi() {
  connect(licensePillBtn_, &QPushButton::clicked, this, [this] { showLicenseDialog(); });
  hdr->addWidget(licensePillBtn_);
 
- // Primary Save / Export Spectrum Cobalt CTA pill
+ // Primary Save / Export Monochrome Spectrum CTA pill
  auto *savePill = new QPushButton(trText("Lưu ▾", "Save ▾"), v2Header);
  savePill->setObjectName("header-primary");
  translations_.append([=, this] { savePill->setText(trText("Lưu ▾", "Save ▾")); });
@@ -3675,13 +3685,13 @@ void MainWindow::syncLicenseUi() {
  const auto &inf = license_->info();
  if (inf.isPro()) {
   licenseOfferTick_.stop();
-  licensePillBtn_->setText(QString::fromUtf8("✓ Pro 2.x"));
+  licensePillBtn_->setText(QString::fromUtf8("● Pro 2.x"));
   licensePillBtn_->setToolTip(trText("Đã kích hoạt trọn đời 2.x · %1/%2 Seat · Offline còn %3 ngày",
                                      "Lifetime 2.x Active · %1/%2 Seat · %3 offline days left")
    .arg(inf.usedSeats).arg(inf.maxSeats).arg(inf.offlineDaysRemaining()));
   licensePillBtn_->setStyleSheet(darkTheme_
-   ? "QPushButton{background:#142b23;color:#5fd9aa;border:1px solid #235945;border-radius:14px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#19382d;}"
-   : "QPushButton{background:#e8f7f0;color:#007a4d;border:1px solid #b4e5cf;border-radius:14px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#d8f2e6;}");
+   ? "QPushButton{background:#222222;color:#d6d6d6;border:1px solid #363636;border-radius:13px;min-height:18px;padding:4px 11px;font-weight:500;font-size:11px;} QPushButton:hover{background:#2c2c2c;color:#ffffff;}"
+   : "QPushButton{background:#f4f4f4;color:#222222;border:1px solid #e0e0e0;border-radius:13px;min-height:18px;padding:4px 11px;font-weight:500;font-size:11px;} QPushButton:hover{background:#eaeaea;}");
   return;
  }
  const qint64 rem = license_->offer().welcomeRemainingSec();
@@ -3691,15 +3701,15 @@ void MainWindow::syncLicenseUi() {
   licensePillBtn_->setText(QString::fromUtf8("⚡ 99k · %1:%2").arg(hh, 2, 10, QChar('0')).arg(mm, 2, 10, QChar('0')));
   licensePillBtn_->setToolTip(trText("Ưu đãi trải nghiệm lần đầu 48 giờ · Bấm để mở khóa trọn đời",
                                      "48h First-Install Welcome Offer · Click to unlock Lifetime 2.x"));
-  licensePillBtn_->setStyleSheet("QPushButton{background:#3b63fb;color:#ffffff;border:none;border-radius:14px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#274dea;}");
+  licensePillBtn_->setStyleSheet("QPushButton{background:#3b63fb;color:#ffffff;border:none;border-radius:13px;min-height:18px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#274dea;}");
  } else {
   licenseOfferTick_.stop();
   licensePillBtn_->setText(trText("Mở khóa Pro", "Unlock Pro"));
   licensePillBtn_->setToolTip(trText("Bản Free · Bấm để kích hoạt hoặc mua Seat trọn đời 2.x",
                                      "Free Edition · Click to activate or buy a Lifetime 2.x Seat"));
   licensePillBtn_->setStyleSheet(darkTheme_
-   ? "QPushButton{background:#1f2842;color:#a8bfff;border:1px solid #3c58a6;border-radius:14px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#283559;}"
-   : "QPushButton{background:#eef2ff;color:#274dea;border:1px solid #cfdafe;border-radius:14px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#e0e8ff;}");
+   ? "QPushButton{background:#242424;color:#ebebeb;border:1px solid #444444;border-radius:13px;min-height:18px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#303030;}"
+   : "QPushButton{background:#ffffff;color:#131313;border:1px solid #131313;border-radius:13px;min-height:18px;padding:4px 11px;font-weight:600;font-size:11px;} QPushButton:hover{background:#f2f2f2;}");
  }
 }
 
@@ -4265,7 +4275,9 @@ void MainWindow::syncPlanningUi() {
   hanoiPlanToggleBtn_->setChecked(hanoiPlanEnabled_);
   hanoiPlanToggleBtn_->setProperty("accentActive", hanoiPlanEnabled_);
   hanoiPlanToggleBtn_->setStyleSheet(hanoiPlanEnabled_
-   ? "QPushButton{background:#3b63fb;color:#ffffff;border:1px solid #274dea;border-radius:15px;font-weight:600;padding:5px 11px;} QPushButton:hover{background:#274dea;}"
+   ? (darkTheme_
+      ? "QPushButton{background:#f5f5f5;color:#131313;border:1px solid #f5f5f5;border-radius:14px;min-height:18px;font-weight:600;padding:5px 12px;} QPushButton:hover{background:#ffffff;}"
+      : "QPushButton{background:#131313;color:#ffffff;border:1px solid #131313;border-radius:14px;min-height:18px;font-weight:600;padding:5px 12px;} QPushButton:hover{background:#2d2d2d;}")
    : QString());
   hanoiPlanToggleBtn_->setText(hanoiPlanEnabled_
    ? trText("✓ Đang đè lớp Quy hoạch Hà Nội", "✓ Hanoi Land-Use Layer Active")

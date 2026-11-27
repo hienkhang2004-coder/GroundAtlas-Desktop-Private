@@ -176,11 +176,11 @@ protected:
    const QPointF n(-dir.y() / len, dir.x() / len);
    QPolygonF lookZone{sA, sB, sB - n * 16.0, sA - n * 16.0};
    p.setPen(Qt::NoPen);
-   p.setBrush(dark ? QColor(75, 117, 255, 44) : QColor(59, 99, 251, 30));
+   p.setBrush(dark ? QColor(245, 245, 245, 34) : QColor(19, 19, 19, 24));
    p.drawPolygon(lookZone);
   }
 
-  const QColor accent = dark ? QColor("#4b75ff") : QColor("#3b63fb");
+  const QColor accent = dark ? QColor("#f5f5f5") : QColor("#131313");
   p.setPen(QPen(accent, 2.0, Qt::DashLine));
   p.drawLine(sA, sB);
 

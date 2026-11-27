@@ -1361,10 +1361,10 @@ void Viewport::paintGL(){
 void Viewport::drawOverlay(QPainter &p){
  const auto tr=[&](const char *vi,const char *en){return QString::fromUtf8(english_?en:vi);};
  const bool dark=darkUi_||palette_.paper.lightnessF()<.4;
- const QColor ink=dark?QColor("#ebebeb"):QColor("#222222"),muted=dark?QColor("#969696"):QColor("#6e6e6e");
- const QColor glassFill=dark?QColor(28,28,28,238):QColor(255,255,255,242);
- const QColor glassBorder=dark?QColor(66,66,66,225):QColor(218,218,218,240);
- const QColor accentCol=dark?QColor("#4b75ff"):QColor("#3b63fb");
+ const QColor ink=dark?QColor("#ebebeb"):QColor("#1f1f1f"),muted=dark?QColor("#969696"):QColor("#6e6e6e");
+ const QColor glassFill=dark?QColor(26,26,26,238):QColor(255,255,255,244);
+ const QColor glassBorder=dark?QColor(62,62,62,225):QColor(220,220,220,242);
+ const QColor accentCol=dark?QColor("#f5f5f5"):QColor("#131313");
 
  const auto m=matrix();
  auto worldToScreen=[&](const QPointF &local,double z=0.4,bool *ok=nullptr){
@@ -1996,7 +1996,7 @@ void Viewport::drawOverlay(QPainter &p){
    const QPointF sA2=worldToScreen(sectionA_+wn*bandM,1.2);
    const QPointF sB2=worldToScreen(sectionB_+wn*bandM,1.2);
    p.setPen(Qt::NoPen);
-   p.setBrush(dark?QColor(75,117,255,44):QColor(59,99,251,30));
+   p.setBrush(dark?QColor(245,245,245,32):QColor(19,19,19,24));
    p.drawPolygon(QPolygonF{sA,sB,sB2,sA2});
    // Look-direction arrows near A and A'
    const QPointF nS(sA2-sA);
@@ -2017,7 +2017,7 @@ void Viewport::drawOverlay(QPainter &p){
   p.setPen(QPen(dark?QColor(0,0,0,150):QColor(255,255,255,190),4.4));
   p.drawLine(sA,sB);
   const bool lineHi=(dragSectionPart_==3||hoverSectionPart_==3);
-  p.setPen(QPen(lineHi?QColor("#6389ff"):accentCol,lineHi?3.0:2.2,Qt::DashDotLine));
+  p.setPen(QPen(lineHi?(dark?QColor("#ffffff"):QColor("#3b63fb")):accentCol,lineHi?3.0:2.2,Qt::DashDotLine));
   p.drawLine(sA,sB);
 
   // Midpoint length badge
@@ -2028,19 +2028,19 @@ void Viewport::drawOverlay(QPainter &p){
    const int tw=p.fontMetrics().horizontalAdvance(lTxt)+14;
    const QPointF mid=(sA+sB)*0.5;
    const QRectF lp(mid.x()-tw*0.5,mid.y()-10,tw,20);
-   p.setPen(QPen(accentCol,1.1));p.setBrush(dark?QColor(24,24,24,238):QColor(255,255,255,244));
+   p.setPen(QPen(glassBorder,1.0));p.setBrush(dark?QColor(22,22,22,240):QColor(255,255,255,244));
    p.drawRoundedRect(lp,10,10);
-   p.setPen(accentCol);p.drawText(lp,Qt::AlignCenter,lTxt);
+   p.setPen(ink);p.drawText(lp,Qt::AlignCenter,lTxt);
   }
 
   // Interactive draggable A and A' circular handles
   auto drawSecHandle=[&](const QPointF &pt,const QString &tag,bool hi){
    const double r=hi?12.5:10.5;
-   p.setPen(QPen(dark?QColor("#181818"):Qt::white,2.2));
-   p.setBrush(hi?QColor("#6389ff"):accentCol);
+   p.setPen(QPen(dark?QColor("#161616"):Qt::white,2.2));
+   p.setBrush(hi?QColor("#3b63fb"):accentCol);
    p.drawEllipse(pt,r,r);
    p.setFont(QFont("Segoe UI",8.2,QFont::Bold));
-   p.setPen(Qt::white);
+   p.setPen(hi?Qt::white:(dark?QColor("#131313"):Qt::white));
    p.drawText(QRectF(pt.x()-12,pt.y()-10,24,20),Qt::AlignCenter,tag);
   };
   drawSecHandle(sA,"A",dragSectionPart_==1||hoverSectionPart_==1);
@@ -2166,15 +2166,15 @@ void Viewport::drawOverlay(QPainter &p){
    const bool hov=(it.id==hoveredDockId_);
    if(it.active){
     p.setPen(Qt::NoPen);
-    p.setBrush(it.accent?accentCol:(dark?QColor("#3c3c3c"):QColor("#222222")));
+    p.setBrush(dark?QColor("#f5f5f5"):QColor("#131313"));
     p.drawRoundedRect(it.rect,13,13);
    }else if(hov){
     p.setPen(Qt::NoPen);
-    p.setBrush(dark?QColor(255,255,255,20):QColor(0,0,0,14));
+    p.setBrush(dark?QColor(255,255,255,20):QColor(0,0,0,12));
     p.drawRoundedRect(it.rect,13,13);
    }
    p.setFont(QFont("Segoe UI",it.id=="zoom-in"||it.id=="zoom-out"?10.5:8.2,it.active?QFont::Bold:QFont::DemiBold));
-   const QColor txtCol=it.active?QColor("#ffffff"):(hov?ink:muted);
+   const QColor txtCol=it.active?(dark?QColor("#131313"):QColor("#ffffff")):(hov?ink:muted);
    p.setPen(txtCol);
    p.drawText(it.rect,Qt::AlignCenter,it.label);
 

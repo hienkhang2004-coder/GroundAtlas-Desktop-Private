@@ -37,26 +37,27 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
  setMinimumWidth(540);
  setMaximumWidth(620);
 
- const QString bg = dark_ ? "#1b1b1b" : "#f8f8f8";
- const QString cardBg = dark_ ? "#222222" : "#ffffff";
- const QString ink = dark_ ? "#ebebeb" : "#222222";
- const QString muted = dark_ ? "#969696" : "#6e6e6e";
- const QString border = dark_ ? "#343434" : "#e1e1e1";
- const QString accent = dark_ ? "#4b75ff" : "#3b63fb";
- const QString accentHov = dark_ ? "#6389ff" : "#274dea";
+ const QString bg = dark_ ? "#161616" : "#f7f7f7";
+ const QString cardBg = dark_ ? "#1f1f1f" : "#ffffff";
+ const QString ink = dark_ ? "#ebebeb" : "#1f1f1f";
+ const QString muted = dark_ ? "#8e8e8e" : "#6e6e6e";
+ const QString border = dark_ ? "#303030" : "#e5e5e5";
+ const QString primaryBg = dark_ ? "#f5f5f5" : "#131313";
+ const QString primaryFg = dark_ ? "#131313" : "#ffffff";
+ const QString primaryHov = dark_ ? "#ffffff" : "#2d2d2d";
  setStyleSheet(QString(
   "QDialog { background:%1; color:%2; }"
-  "QFrame#lic-card { background:%3; border:1px solid %4; border-radius:10px; }"
+  "QFrame#lic-card { background:%3; border:1px solid %4; border-radius:12px; }"
   "QLabel#muted { color:%5; font-size:12px; }"
-  "QLineEdit { background:%3; color:%2; border:1px solid %4; border-radius:7px; padding:8px 12px; font-family:Consolas,'SF Mono',monospace; font-size:13.5px; }"
-  "QLineEdit:focus { border:1.5px solid %6; }"
-  "QPushButton#accent-btn { background:%6; color:#ffffff; border:none; border-radius:14px; min-height:18px; padding:7px 16px; font-weight:600; }"
-  "QPushButton#accent-btn:hover { background:%7; }"
+  "QLineEdit { background:%3; color:%2; border:1px solid %4; border-radius:8px; padding:8px 12px; font-family:Consolas,'SF Mono',monospace; font-size:13.5px; }"
+  "QLineEdit:focus { border:1.5px solid #3b63fb; }"
+  "QPushButton#accent-btn { background:%6; color:%7; border:none; border-radius:14px; min-height:18px; padding:7px 16px; font-weight:600; }"
+  "QPushButton#accent-btn:hover { background:%8; }"
   "QPushButton#sec-btn { background:%3; color:%2; border:1px solid %4; border-radius:14px; min-height:18px; padding:6px 14px; font-weight:500; }"
   "QPushButton#sec-btn:hover { border-color:%6; }"
   "QPushButton#danger-btn { background:transparent; color:#d7373f; border:1px solid #d7373f; border-radius:14px; min-height:18px; padding:6px 14px; font-weight:600; }"
   "QPushButton#danger-btn:hover { background:rgba(215,55,63,0.10); }"
- ).arg(bg, ink, cardBg, border, muted, accent, accentHov));
+ ).arg(bg, ink, cardBg, border, muted, primaryBg, primaryFg, primaryHov));
 
  auto *root = new QVBoxLayout(this);
  root->setContentsMargins(18, 16, 18, 16);
@@ -67,12 +68,12 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
   auto *gate = new QFrame(this);
   gate->setObjectName("gate-banner");
   gate->setStyleSheet(QString("QFrame#gate-banner{background:%1;border:1px solid %2;border-radius:10px;} QFrame#gate-banner QLabel{border:none;background:transparent;}")
-   .arg(dark_ ? "#1e2742" : "#eef2ff", accent));
+   .arg(dark_ ? "#242424" : "#f2f2f2", border));
   auto *gl = new QVBoxLayout(gate);
   gl->setContentsMargins(14, 10, 14, 10);
   gl->setSpacing(4);
   auto *gt = new QLabel(trText("🔒 Tính năng Pro: ", "🔒 Pro Feature: ") + blockedFeature, gate);
-  gt->setStyleSheet(QString("font-weight:700;color:%1;font-size:13px;").arg(dark_ ? "#a8bfff" : "#274dea"));
+  gt->setStyleSheet(QString("font-weight:700;color:%1;font-size:13px;").arg(ink));
   auto *gs = new QLabel(trText(
    "Bản Free cho phép xem 2D/3D, nạp OSM và đè quy hoạch không giới hạn. Nhập mã bản quyền trọn đời (1 Seat = 1 Máy) để mở khóa toàn bộ xuất file CAD / SketchUp / 4K / PDF / Import .SKP.",
    "Free edition includes unlimited 2D/3D viewing, live OSM loading & planning overlay. Activate a Lifetime 2.x Seat key (1 Seat = 1 Machine) to unlock all CAD/SketchUp/4K/PDF exports & .SKP import."), gate);
@@ -132,7 +133,9 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
  batchBar_ = new QProgressBar(buyPanel_);
  batchBar_->setFixedHeight(6);
  batchBar_->setTextVisible(false);
- batchBar_->setStyleSheet("QProgressBar{background:rgba(59,99,251,0.16);border:none;border-radius:3px;} QProgressBar::chunk{background:#3b63fb;border-radius:3px;}");
+ batchBar_->setStyleSheet(dark_
+  ? "QProgressBar{background:#2c2c2c;border:none;border-radius:3px;} QProgressBar::chunk{background:#f5f5f5;border-radius:3px;}"
+  : "QProgressBar{background:#e8e8e8;border:none;border-radius:3px;} QProgressBar::chunk{background:#131313;border-radius:3px;}");
  bpl->addWidget(batchBar_);
 
  auto *pkgRow = new QGridLayout();

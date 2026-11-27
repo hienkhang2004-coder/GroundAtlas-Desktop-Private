@@ -89,7 +89,7 @@ StyleGalleryDialog::StyleGalleryDialog(const QString &activeStyle,
   const auto &pal = pals[i];
   auto *card = new QFrame(styleHost);
   card->setObjectName("v2-card");
-  if (pal.id == activeStyle) card->setStyleSheet("QFrame#v2-card{border:2px solid #3b63fb;}");
+  if (pal.id == activeStyle) card->setStyleSheet("QFrame#v2-card{border:2px solid #131313;}");
   auto *cl = new QVBoxLayout(card);
   cl->setContentsMargins(10, 10, 10, 10);
   cl->setSpacing(6);
@@ -124,7 +124,7 @@ StyleGalleryDialog::StyleGalleryDialog(const QString &activeStyle,
   const auto &pal = kit.palette;
   auto *card = new QFrame(kitHost);
   card->setObjectName("v2-card");
-  if (kit.id == activeDiagram) card->setStyleSheet("QFrame#v2-card{border:2px solid #3b63fb;}");
+  if (kit.id == activeDiagram) card->setStyleSheet("QFrame#v2-card{border:2px solid #131313;}");
   auto *cl = new QVBoxLayout(card);
   cl->setContentsMargins(10, 10, 10, 10);
   cl->setSpacing(6);

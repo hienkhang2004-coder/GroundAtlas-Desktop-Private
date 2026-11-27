@@ -114,6 +114,8 @@ private:
  QVector<ux::SlidingPillTrack *> segTracks_;
  QWidget *leftPanel_ = nullptr;
  QWidget *studioPanel_ = nullptr;
+ QLabel *logoIcon_ = nullptr;
+ QToolButton *settingsIconBtn_ = nullptr;
  QToolButton *leftToggle_ = nullptr;
  QToolButton *rightToggle_ = nullptr;
  QPushButton *studioToggleBtn_ = nullptr;

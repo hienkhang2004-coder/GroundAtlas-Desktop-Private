@@ -287,13 +287,13 @@ void MapCanvas::drawSelection(QPainter &p){
 void MapCanvas::drawHud(QPainter &ui){
  hudButtons_.clear();
  const bool dark=darkUi_||(basemapMode_=="satellite");
- const QColor glassBg=dark?QColor(26,26,26,236):QColor(255,255,255,242);
- const QColor glassBorder=dark?QColor(255,255,255,34):QColor(0,0,0,24);
- const QColor textPrimary=dark?QColor("#ebebeb"):QColor("#222222");
+ const QColor glassBg=dark?QColor(24,24,24,238):QColor(255,255,255,244);
+ const QColor glassBorder=dark?QColor(255,255,255,34):QColor(0,0,0,22);
+ const QColor textPrimary=dark?QColor("#ebebeb"):QColor("#1f1f1f");
  const QColor textMuted=dark?QColor("#969696"):QColor("#6e6e6e");
- const QColor activeBg=dark?QColor("#4b75ff"):QColor("#3b63fb");
- const QColor activeFg=QColor("#ffffff");
- const QColor hoverBg=dark?QColor(255,255,255,20):QColor(59,99,251,18);
+ const QColor activeBg=dark?QColor("#f5f5f5"):QColor("#131313");
+ const QColor activeFg=dark?QColor("#131313"):QColor("#ffffff");
+ const QColor hoverBg=dark?QColor(255,255,255,18):QColor(0,0,0,12);
 
  // 1. Top-Left Glass Status & Site Card (14,14 -> stays far above y=180 test zone!)
  const int cardW=std::min(312,std::max(210,width()-28));

@@ -44,8 +44,18 @@ private:
 class TitleBar:public QWidget {
  Q_OBJECT
 public:
- TitleBar(QWidget *target):QWidget(target),target_(target){setObjectName("mac-titlebar");setFixedHeight(31);auto layout=new QHBoxLayout(this);layout->setContentsMargins(12,3,12,3);layout->setSpacing(0);for(auto kind:{TrafficButton::Close,TrafficButton::Minimize,TrafficButton::Zoom}){auto button=new TrafficButton(kind,target,this);buttons_.append(button);layout->addWidget(button);}layout->addStretch();title_=new QLabel(this);title_->setObjectName("mac-window-title");title_->setAlignment(Qt::AlignCenter);title_->setAttribute(Qt::WA_TransparentForMouseEvents);layout->addWidget(title_,3);layout->addStretch();auto balance=new QWidget(this);balance->setFixedWidth(66);balance->setAttribute(Qt::WA_TransparentForMouseEvents);layout->addWidget(balance);target->installEventFilter(this);sync();}
- void sync(){if(!target_)return;const auto text=target_->windowTitle();title_->setText(fontMetrics().elidedText(text,Qt::ElideMiddle,std::max(120,width()-260)));const bool dialog=qobject_cast<QDialog*>(target_.data());buttons_[1]->setEnabled(!dialog);buttons_[2]->setEnabled(!dialog||target_->minimumSize()!=target_->maximumSize());const bool en=target_->property("gaEnglish").toBool();for(auto b:buttons_){b->language(en);b->update();}}
+ TitleBar(QWidget *target,QMenuBar *inlineMenu=nullptr):QWidget(target),target_(target){
+  setObjectName("mac-titlebar");setFixedHeight(34);
+  auto layout=new QHBoxLayout(this);layout->setContentsMargins(12,3,12,3);layout->setSpacing(0);
+  for(auto kind:{TrafficButton::Close,TrafficButton::Minimize,TrafficButton::Zoom}){auto button=new TrafficButton(kind,target,this);buttons_.append(button);layout->addWidget(button);}
+  if(inlineMenu){layout->addSpacing(8);inlineMenu->setParent(this);inlineMenu->setSizePolicy(QSizePolicy::Minimum,QSizePolicy::Fixed);layout->addWidget(inlineMenu);}
+  layout->addStretch(1);
+  title_=new QLabel(this);title_->setObjectName("mac-window-title");title_->setAlignment(Qt::AlignCenter);title_->setAttribute(Qt::WA_TransparentForMouseEvents);layout->addWidget(title_,2);
+  layout->addStretch(1);
+  auto balance=new QWidget(this);balance->setFixedWidth(inlineMenu?120:66);balance->setAttribute(Qt::WA_TransparentForMouseEvents);layout->addWidget(balance);
+  target->installEventFilter(this);sync();
+ }
+ void sync(){if(!target_)return;const auto text=target_->windowTitle();title_->setText(fontMetrics().elidedText(text,Qt::ElideMiddle,std::max(120,width()-360)));const bool dialog=qobject_cast<QDialog*>(target_.data());buttons_[1]->setEnabled(!dialog);buttons_[2]->setEnabled(!dialog||target_->minimumSize()!=target_->maximumSize());const bool en=target_->property("gaEnglish").toBool();for(auto b:buttons_){b->language(en);b->update();}}
 protected:
  bool eventFilter(QObject *object,QEvent *event)override{if(object==target_&&(event->type()==QEvent::WindowTitleChange||event->type()==QEvent::WindowStateChange||event->type()==QEvent::ActivationChange||event->type()==QEvent::DynamicPropertyChange))sync();return QWidget::eventFilter(object,event);}
  void resizeEvent(QResizeEvent *event)override{sync();QWidget::resizeEvent(event);}
@@ -58,7 +68,23 @@ class ChromeManager:public QObject,public QAbstractNativeEventFilter {
 public:
  explicit ChromeManager(QApplication &app):QObject(&app){app.installEventFilter(this);app.installNativeEventFilter(this);}
  ~ChromeManager(){if(qApp){qApp->removeEventFilter(this);qApp->removeNativeEventFilter(this);}}
- void main(QMainWindow *window){if(!window||window->property("gaChrome").toBool())return;prepare(window);auto container=new QWidget(window);container->setObjectName("mac-window-top");auto layout=new QVBoxLayout(container);layout->setContentsMargins(0,0,0,0);layout->setSpacing(0);layout->addWidget(new TitleBar(window));auto previous=window->menuBar();auto menu=new QMenuBar(container);menu->setObjectName("mac-menu");menu->setNativeMenuBar(false);for(auto action:previous->actions()){if(auto popup=action->menu())popup->setParent(menu,popup->windowFlags());if(action->parent()==previous)action->setParent(menu);menu->addAction(action);}layout->addWidget(menu);window->setMenuWidget(container);}
+ void main(QMainWindow *window){
+  if(!window||window->property("gaChrome").toBool())return;
+  prepare(window);
+  auto previous=window->menuBar();
+  auto menu=new QMenuBar(window);
+  menu->setObjectName("mac-menu");
+  menu->setNativeMenuBar(false);
+  for(auto action:previous->actions()){
+   if(auto popup=action->menu())popup->setParent(menu,popup->windowFlags());
+   if(action->parent()==previous)action->setParent(menu);
+   menu->addAction(action);
+  }
+  auto container=new QWidget(window);container->setObjectName("mac-window-top");
+  auto layout=new QVBoxLayout(container);layout->setContentsMargins(0,0,0,0);layout->setSpacing(0);
+  layout->addWidget(new TitleBar(window,menu));
+  window->setMenuWidget(container);
+ }
 protected:
  bool eventFilter(QObject *object,QEvent *event)override{
   auto widget=qobject_cast<QWidget*>(object);if(!widget)return false;
@@ -71,7 +97,7 @@ protected:
   auto msg=static_cast<MSG*>(message);auto window=windows_.value(quintptr(msg->hwnd));if(!window)return false;
   if(msg->message==WM_NCCALCSIZE&&msg->wParam){if(IsZoomed(msg->hwnd)){MONITORINFO monitor{};monitor.cbSize=sizeof(MONITORINFO);if(GetMonitorInfo(MonitorFromWindow(msg->hwnd,MONITOR_DEFAULTTONEAREST),&monitor))reinterpret_cast<NCCALCSIZE_PARAMS*>(msg->lParam)->rgrc[0]=monitor.rcWork;}*result=0;return true;}
   if(msg->message==WM_NCHITTEST){RECT r;GetWindowRect(msg->hwnd,&r);const int x=GET_X_LPARAM(msg->lParam),y=GET_Y_LPARAM(msg->lParam);const double dpr=window->devicePixelRatioF();const int border=std::max(5,qRound(6*dpr));const bool resizable=!window->isMaximized()&&!window->isFullScreen()&&window->minimumSize()!=window->maximumSize();if(resizable){const bool left=x<r.left+border,right=x>=r.right-border,top=y<r.top+border,bottom=y>=r.bottom-border;const auto hit=top&&left?HTTOPLEFT:top&&right?HTTOPRIGHT:bottom&&left?HTBOTTOMLEFT:bottom&&right?HTBOTTOMRIGHT:left?HTLEFT:right?HTRIGHT:top?HTTOP:bottom?HTBOTTOM:HTNOWHERE;if(hit!=HTNOWHERE){*result=hit;return true;}}
-   const QPoint local(qRound((x-r.left)/dpr),qRound((y-r.top)/dpr));if(auto bar=window->findChild<TitleBar*>("mac-titlebar")){const auto point=bar->mapFrom(window,local);if(bar->rect().contains(point)){auto child=bar->childAt(point);bool button=false;for(auto p=child;p&&p!=bar;p=p->parentWidget())if(qobject_cast<QAbstractButton*>(p)){button=true;break;}if(!button){*result=HTCAPTION;return true;}}}}
+   const QPoint local(qRound((x-r.left)/dpr),qRound((y-r.top)/dpr));if(auto bar=window->findChild<TitleBar*>("mac-titlebar")){const auto point=bar->mapFrom(window,local);if(bar->rect().contains(point)){auto child=bar->childAt(point);bool interactive=false;for(auto p=child;p&&p!=bar;p=p->parentWidget())if(qobject_cast<QAbstractButton*>(p)||qobject_cast<QMenuBar*>(p)){interactive=true;break;}if(!interactive){*result=HTCAPTION;return true;}}}}
 #else
   Q_UNUSED(message);Q_UNUSED(result);
 #endif
