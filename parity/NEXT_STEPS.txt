@@ -1,0 +1,23 @@
+GroundAtlas Desktop 0.11.1 — feature expansion paused
+27 October 2026 / Asia/Bangkok
+
+User requested keeping the current feature set and focusing on lag.
+The full parity goal is paused, not completed. Keep the 103-item inventory.
+
+Delivered performance work
+- Stable GPU model buffers with camera uniforms; no pan/zoom geometry uploads.
+- Orientation-only transparent sorting and partial buffer updates.
+- Retained Mercator drawing paths; padded gesture snapshots with 120 ms final redraw.
+- Full resolution PNG exports force a precise redraw.
+- Background, revision-aware session recovery from 0.11 development.
+
+Evidence: validation/performance-v0111.json, context-live-v0111/review.json,
+large-gpu-v0111/review.json and the seven versioned test logs (135 checks).
+
+Possible later performance work, only when requested/needed
+- Background manual open/save/export with cancellation and progress.
+- Profile very large transparent models while orbiting.
+- Spatial indexing for picking and visible 2D drawing.
+- Coalesce expensive layer/style/mesh rebuilds.
+
+Original feature backlog is retained in NEXT_STEPS-before-performance.txt.

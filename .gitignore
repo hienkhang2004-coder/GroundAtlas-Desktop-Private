@@ -1,0 +1,27 @@
+# Build & packaging outputs (never commit binaries to source repo)
+build*/
+portable*/
+dist-macos/
+validation/
+*.exe
+*.zip
+*.dmg
+*.icns
+
+# Secrets & local deployment config (CRITICAL — NEVER commit!)
+.env
+.env.*
+license-server/.dev.vars
+license-server/.env
+license-server/.env.*
+license-server/.admin-key-*
+license-server/node_modules/
+license-server/.wrangler/
+license-server/dist/
+
+# OS & editor clutter
+.DS_Store
+Thumbs.db
+*.user
+.vscode/
+.idea/

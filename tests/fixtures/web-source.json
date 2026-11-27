@@ -1,0 +1,587 @@
+{
+  "source": "Actual web detailSelectors, osmGeoJSON and workbench osm-enrich handler",
+  "selectors": {
+    "context": "nwr[natural=tree](20,100,21,101);nwr[leisure](20,100,21,101);nwr[amenity](20,100,21,101);nwr[historic](20,100,21,101);nwr[heritage](20,100,21,101);nwr[healthcare](20,100,21,101);",
+    "mobility": "way[highway~\"^(footway|pedestrian|path|steps|cycleway|living_street)$\"](20,100,21,101);way[cycleway](20,100,21,101);way[\"cycleway:left\"](20,100,21,101);way[\"cycleway:right\"](20,100,21,101);nwr[public_transport](20,100,21,101);node[highway=bus_stop](20,100,21,101);nwr[railway~\"^(station|halt|tram_stop)$\"](20,100,21,101);",
+    "buildings": "nwr[building][start_date](20,100,21,101);nwr[building][height](20,100,21,101);nwr[building][\"building:levels\"](20,100,21,101);nwr[building][\"building:use\"](20,100,21,101);"
+  },
+  "heights": [
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "45 ft"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 13.716000000000001,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "24 feet"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 7.315200000000001,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "30'"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 9.144,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "12.5 m"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 12.5,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "7;8"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 7,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "bad",
+          "building:levels": "4"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 12,
+      "height_source": "floors_3m"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "0",
+          "building:levels": "10"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 30,
+      "height_source": "floors_3m"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "1200"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": null,
+      "height_source": null
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "building:levels": "700"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 2100,
+      "height_source": "floors_3m"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": ".5 m"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 0.5,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "1e2 ft"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": 30.48,
+      "height_source": "osm_height"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "height": "2e3"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "height": null,
+      "height_source": null
+    }
+  ],
+  "geometry": [
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "amenity": "school"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "geometry": "Polygon"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "highway": "pedestrian"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "geometry": "LineString"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "highway": "pedestrian",
+          "area": "yes"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "geometry": "Polygon"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "leisure": "park"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "geometry": "Polygon"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "natural": "scrub"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "geometry": "Polygon"
+    },
+    {
+      "row": {
+        "type": "way",
+        "id": 10,
+        "tags": {
+          "building": "yes",
+          "area": "no"
+        },
+        "geometry": [
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.0288
+          },
+          {
+            "lon": 105.8527,
+            "lat": 21.029
+          },
+          {
+            "lon": 105.8525,
+            "lat": 21.0288
+          }
+        ]
+      },
+      "geometry": "LineString"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "node/7",
+      "tags": {
+        "natural": "tree"
+      }
+    },
+    {
+      "id": "node/8",
+      "tags": {
+        "natural": "tree"
+      }
+    },
+    {
+      "id": "way/9",
+      "tags": {
+        "building": "yes"
+      }
+    },
+    {
+      "id": "way/10",
+      "tags": {
+        "highway": "residential"
+      }
+    },
+    {
+      "id": "way/11",
+      "tags": {
+        "highway": "cycleway"
+      }
+    },
+    {
+      "id": "node/12",
+      "tags": {
+        "historic": "memorial"
+      }
+    }
+  ],
+  "enrichment_added_ids": [
+    "node/8",
+    "way/11",
+    "node/12"
+  ]
+}

@@ -1,0 +1,1682 @@
+{
+  "schema": 1,
+  "goal": "GroundAtlas native functional/visual parity with the web product inside the requested macOS-style shell",
+  "baselineDate": "2026-10-27",
+  "timezone": "Asia/Bangkok",
+  "constraints": [
+    "C++/Qt/OpenGL native UI; no WebView, Electron or Tauri wrapper.",
+    "Preserve source labels, spatial coverage, unknown heights and scientific limitations.",
+    "The macOS-style window shell is a user-requested native desktop adaptation.",
+    "Parity is complete only after each supported web workflow is verified on desktop.",
+    "A feature that is unavailable on the web is not a claim that the desktop implements its model."
+  ],
+  "statusDefinitions": {
+    "pending": "Not ported",
+    "partial": "A subset exists; not equivalent to web",
+    "implemented": "Native implementation exists; acceptance checks pending",
+    "verified": "Named acceptance evidence exists",
+    "web-unavailable": "Web itself lacks an input/model; desktop must retain honest unavailable state"
+  },
+  "groups": [
+    {
+      "id": "shell",
+      "name": "Giao diện, cửa sổ và thiết lập",
+      "features": [
+        {
+          "id": "shell.chrome",
+          "name": "Thanh tiêu đề macOS, đóng / thu nhỏ / phóng to và kéo đổi kích thước",
+          "status": "verified",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "native_ui_tests: chromeHasWorkingControlsAndKeepsMenus / closeWindowCanBeCancelledAcrossTabs / menusRemainPopupsAfterChromeInstallation",
+            "Actual Windows viewport: validation/native-v031.json; maximize/restore inspected using native UI; preview validation/native-v031.png."
+          ]
+        },
+        {
+          "id": "shell.tabs",
+          "name": "Nhiều dự án, đổi / đóng / sắp xếp tab",
+          "status": "verified",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "native_ui_tests: tabSwitchingRetainsNotesAndLayers / closeTabHonorsCancelAndDiscard / reorderingTabsRetainsDocumentIdentity / reopenExistingFileActivatesItsTab"
+          ]
+        },
+        {
+          "id": "shell.dialogs",
+          "name": "Hộp thoại và trình chọn tệp cùng phong cách",
+          "status": "verified",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "native_ui_tests: dialogsUseTheSameTitlebar / filePickerKeepsSelectionAfterChromeInstallation"
+          ]
+        },
+        {
+          "id": "shell.locale",
+          "name": "Tiếng Việt / Anh độc lập cho toàn bộ công cụ",
+          "status": "partial",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "shell.units",
+          "name": "Đơn vị mét / Anh và chuyển đổi hiển thị",
+          "status": "pending",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "shell.theme",
+          "name": "Sáng / tối, tùy chọn và khôi phục thiết lập",
+          "status": "pending",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "shell.navigation",
+          "name": "Điều hướng Site, Context, Palette và trang phụ",
+          "status": "pending",
+          "web": [
+            "reference-workspace.js",
+            "reference-workspace.css",
+            "reference-preferences.mjs",
+            "locale.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "name": "Dự án và dữ liệu cục bộ",
+      "features": [
+        {
+          "id": "project.save",
+          "name": "Lưu/mở dự án nguyên tử, giữ thuộc tính nguồn và lỗ polygon",
+          "status": "verified",
+          "web": [
+            "workbench.js",
+            "site-request.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "native_core_tests: atomicProjectRoundTrip / polygonHoles / geographicRoundTrip"
+          ]
+        },
+        {
+          "id": "project.session",
+          "name": "Tự lưu, phục hồi nhiều tab",
+          "status": "verified",
+          "web": [
+            "workbench.js",
+            "site-request.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "native_ui_tests: autosaveRestoresEveryDocument"
+          ]
+        },
+        {
+          "id": "project.geojson",
+          "name": "Nhập/xuất GeoJSON WGS84",
+          "status": "partial",
+          "web": [
+            "workbench.js",
+            "site-request.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "native_core_tests: geoJsonHeightsAndHoles / invalidGeoJsonRejects",
+            "native_import_tests: allSevenRolesMatchExecutedWeb / duplicateIdsAndRemovalAreIsolated / reclipRecoversRawPartsAndKeepsSourceScope / rawImportsCanSupplyOutsideThePrimaryWindow / zeroVisibleGroupIsRetainedAndCanRecover / projectAndExportPreserveRawMetadataAndHoles",
+            "native_import_tests: resourceLimitsAndCancellation / pointBudgetIncludesThePersistedBoundary / damagedRetainedImportsReject / currentDocumentImportPreservesConcurrentEditsAndNavigation / asyncImportTargetsOriginTabAndIgnoresClosedTabs / importPickerAndBothLanguagesUseNativeShell / failedUiImportRetainsDataAndReportsLocalizedError",
+            "Actual packaged native file-picker import: validation/native-v010-import.jpg and validation/qa-v010-final.gatlas. Final EXE native close: validation/native-v010-final-close.json.",
+            "Actual GPU thematic roles, 3D, wheel zoom, removal, round-trip and SVG/PDF/OBJ/GeoJSON output: validation/import-gpu-v010-final/review.json."
+          ],
+          "evidence": [
+            "src/geojsonoverlay.cpp",
+            "tests/fixtures/web-imports.json",
+            "tests/import_tests.cpp",
+            "validation/import-tests-v010.txt",
+            "validation/import-gpu-v010-final/review.json",
+            "validation/native-v010-import.jpg",
+            "validation/import-tests-v0111.txt",
+            "validation/large-import-v011-optimized/review.json",
+            "validation/large-gpu-v0111/review.json"
+          ],
+          "remaining": [
+            "Native budgets differ from cumulative web budgets; max-size complex polygons/holes and all export/service combinations are not exhaustively verified."
+          ]
+        },
+        {
+          "id": "project.recent",
+          "name": "Danh sách dự án gần đây và kiểm tra phiên bản tệp",
+          "status": "partial",
+          "web": [
+            "workbench.js",
+            "site-request.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "project.source",
+          "name": "Nguồn, bản quyền, độ phủ, tuổi dữ liệu và chiều cao ước tính",
+          "status": "partial",
+          "web": [
+            "workbench.js",
+            "site-request.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "site",
+      "name": "Chọn và nạp khu đất",
+      "features": [
+        {
+          "id": "site.search",
+          "name": "Tìm địa điểm, tọa độ và danh sách gợi ý",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "Photon đã trả 5 địa điểm trong kiểm tra native dịch vụ; còn đồng bộ trình bày/gợi ý và trạng thái lỗi."
+          ]
+        },
+        {
+          "id": "site.circle",
+          "name": "Chọn phạm vi tròn, tâm và đường kính",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ],
+          "evidence": [
+            "validation/ui-tests-v09.txt",
+            "validation/native-v09-source-vi.jpg"
+          ],
+          "remaining": [
+            "Complete per-source selection limits and all web circle workflows. Loaded source values no longer clamp to normal control bounds."
+          ]
+        },
+        {
+          "id": "site.rectangle",
+          "name": "Chọn phạm vi chữ nhật",
+          "status": "verified",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "native_core_tests: primitiveSiteShapes / shapeAndProvenanceRoundTrip / lineClipsToConcaveBoundary",
+            "native_ui_tests: rectangleControlsAndSelectionRestore / currentSourceReclipsInAnotherTab"
+          ]
+        },
+        {
+          "id": "site.polygon",
+          "name": "Vẽ/chỉnh phạm vi đa giác",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "Native draw/finish/undo/cancel, coordinate editor, vertex dragging, draft restoration and boundary clipping implemented.",
+            "native_ui_tests: polygonDrawCanFinishUndoAndCancel / polygonDraftSurvivesProjectSwitch. Coordinate editing and vertex-drag acceptance still require direct verification."
+          ]
+        },
+        {
+          "id": "site.sources",
+          "name": "Chọn OSM / Overture / cửa sổ nguồn Việt Nam và hợp nhất dữ liệu",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "Native public OSM, current data and retained Hoan Kiem / Ben Thanh / Dragon Bridge source windows are implemented, with properties/provenance preserved.",
+            "native_ui_tests: savedWindowSourceLoadsActualHoanKiem. Wider source selection/merge and cloud entitlements are still incomplete.",
+            "0.10 native GeoJSON overlays now support all seven web roles, raw retention, current-document/background-tab delivery and per-file removal; validation/import-tests-v010.txt and validation/import-gpu-v010-final/review.json. Wider catalogue and secure cloud delivery remain partial."
+          ],
+          "evidence": [
+            "src/osmworkflow.cpp",
+            "src/dataaccess.cpp",
+            "validation/data-tests-v09.txt",
+            "validation/ui-tests-v09.txt",
+            "validation/source-live-get-v09/review.json",
+            "src/geojsonoverlay.cpp",
+            "validation/import-tests-v010.txt",
+            "validation/import-gpu-v010-final/review.json"
+          ],
+          "remaining": [
+            "Native source catalogue/coverage and authorized Overture/cloud delivery.",
+            "Successful current live OSM delivery remains unverified: both public providers timed out in the real 0.9 test."
+          ]
+        },
+        {
+          "id": "site.live-osm",
+          "name": "Nạp OSM công khai, hủy, lỗi, giữ hình học và lỗ relation",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "native_service_check: services-de.json có 49 hình học / 2 công trình; native_core_tests: overpassRelationsAndHeights / clipPreservesHolesAndSource"
+          ],
+          "evidence": [
+            "validation/data-tests-v09.txt",
+            "validation/ui-tests-v09.txt",
+            "validation/source-live-get-v09/review.json",
+            "tests/fixtures/web-source.json"
+          ],
+          "remaining": [
+            "Current public live success: both GET providers hit their 25-second deadlines in the 0.9 runtime test. Retain the real failure evidence; do not label the controlled TCP fixtures as a live-service success."
+          ]
+        },
+        {
+          "id": "site.cache",
+          "name": "Cache theo phạm vi, tải lại và giới hạn tác vụ",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn.",
+            "OSM cache: 6 hours, 8 owned entries, exact query/profile key, payload hash, persistent reuse and explicit refresh.",
+            "Controlled TCP tests cover provider fallback, deadlines, pacing, cancellation, corrupted/expired entries, size limits and no stale delivery."
+          ],
+          "evidence": [
+            "src/dataaccess.cpp",
+            "validation/data-tests-v09.txt",
+            "validation/ui-tests-v09.txt"
+          ],
+          "remaining": [
+            "Protected backend cache/quotas and authenticated source workflows remain in the cloud scope."
+          ]
+        },
+        {
+          "id": "site.quality",
+          "name": "Thông báo nguồn thiếu, chiều cao thiếu và thống kê chất lượng",
+          "status": "partial",
+          "web": [
+            "site-request.mjs",
+            "reference-source-access.mjs",
+            "osm-source.mjs",
+            "national-coverage.js"
+          ],
+          "acceptance": [
+            "Native quality groups distinguish recorded heights, AI, floor estimates, other estimates and unknown/flat records.",
+            "Source-window coverage fractions are not described as real-world data completeness. native_core_tests: qualityCountsDistinguishSourceAndEstimates / geographicPolygonAndCoverage."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "name": "Bản đồ và camera",
+      "features": [
+        {
+          "id": "map.navigation",
+          "name": "Pan, cuộn thu/phóng, về tâm và chọn đối tượng",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ],
+          "evidence": [
+            "validation/ui-tests-v07.txt",
+            "validation/context-live-v07/review.json",
+            "validation/native-v07-close.json",
+            "src/contextcamera.cpp",
+            "validation/core-tests-v08.txt",
+            "validation/ui-tests-v08.txt",
+            "validation/navigation-final-v08/review.json",
+            "validation/performance-v0111.json",
+            "validation/context-live-v0111/review.json",
+            "validation/presentation-tests-v0111.txt"
+          ],
+          "remaining": [
+            "Full web navigation, picking/editing and annotation workflows.",
+            "Broader DPI, service failure and GPU fallback coverage."
+          ]
+        },
+        {
+          "id": "map.global",
+          "name": "Bản đồ nền toàn cầu",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Native global vector basemap with labels, viewport navigation, styled 2D/3D context and explicit network/unavailable states, equivalent to the web reference. Keep presentation tiles outside the analytical project."
+          ],
+          "evidence": [
+            "src/mapcanvas.cpp",
+            "src/nativebasemap.cpp",
+            "src/contextcamera.cpp",
+            "validation/vector-live-v07/review.json",
+            "validation/context-live-v07/review.json",
+            "validation/native-v07.json",
+            "validation/navigation-final-v08/review.json",
+            "validation/core-tests-v08.txt",
+            "validation/ui-tests-v08.txt"
+          ],
+          "remaining": [
+            "Broader cold-cache, provider outage, GPU fallback and DPI cases against the same web reference."
+          ]
+        },
+        {
+          "id": "map.outside-style",
+          "name": "Phong cách vector trong/ngoài ranh và làm mờ bối cảnh",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ],
+          "evidence": [
+            "src/vectorstyle.cpp",
+            "src/nativebasemap.cpp",
+            "src/contextcamera.cpp",
+            "validation/vector-context-tests-v07.txt",
+            "validation/context-live-v07/review.json",
+            "validation/native-v07-original-context.jpg"
+          ],
+          "remaining": [
+            "Complete cross-view/preset visual parity, including symbols and legends.",
+            "Broader geographic/provider and DPI cases."
+          ]
+        },
+        {
+          "id": "map.2d",
+          "name": "Bản đồ 2D theo lớp và bộ sơ đồ",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "map.3d",
+          "name": "Khối 3D, sân trong, nền nước/đường/cây và chiều cao nguồn",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "map.projections",
+          "name": "Trục đo, đẳng cự, phối cảnh, 1/2 điểm tụ",
+          "status": "verified",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Native core cameraMatchesActualWebAdapter uses the actual web adapter: 20 camera cases and 100 ground/roof landmarks.",
+            "Native GPU context check covers all five projections and subsequent wheel/orbit changes; native picker and renderer share the projection."
+          ],
+          "evidence": [
+            "tests/fixtures/web-camera.json",
+            "tests/core_tests.cpp",
+            "validation/core-tests-v07.txt",
+            "validation/context-live-v07/review.json",
+            "validation/native-v07-one-point-en.jpg",
+            "validation/native-v07-two-point-en.jpg",
+            "validation/core-tests-v08.txt",
+            "validation/context-live-v08/review.json"
+          ]
+        },
+        {
+          "id": "map.inspect",
+          "name": "Chọn đối tượng và xem/chỉnh thuộc tính theo nguồn",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "map.symbols",
+          "name": "Nhãn, ký hiệu, la bàn, tỷ lệ và lưới",
+          "status": "partial",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "map.trees",
+          "name": "Tài sản cây, cùng bố trí 2D/3D/mặt cắt",
+          "status": "pending",
+          "web": [
+            "reference-basemap.mjs",
+            "reference-vector-scene.mjs",
+            "reference-camera-projections.mjs",
+            "replica-map-core.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "presentation",
+      "name": "Phong cách, lớp và bộ sơ đồ",
+      "features": [
+        {
+          "id": "presentation.styles",
+          "name": "39 phong cách có xem trước, lọc và tìm kiếm",
+          "status": "partial",
+          "web": [
+            "reference-dialogs.mjs",
+            "reference-presentation-library.mjs",
+            "reference-layer-catalog.mjs",
+            "reference-model-style.mjs"
+          ],
+          "acceptance": [
+            "0.5.1: all 59 preset layer states match the web fields in native_presentation_tests::allStyleFieldsMatchWeb. Profiles include outlines, road widths, trees and graphic offset shadows.",
+            "GPU frames: validation/gpu-v05/review.json. Style-library thumbnails/search/history/custom presets remain unported."
+          ]
+        },
+        {
+          "id": "presentation.kits",
+          "name": "20 bộ sơ đồ, kiểm tra tính khả dụng theo nguồn",
+          "status": "partial",
+          "web": [
+            "reference-dialogs.mjs",
+            "reference-presentation-library.mjs",
+            "reference-layer-catalog.mjs",
+            "reference-model-style.mjs"
+          ],
+          "acceptance": [
+            "0.5.1: 20 kits use the web visible-layer and opacity states; required-layer availability uses real loaded tags. Missing data produces a native status message.",
+            "Source-over and courtyard pixels tested in native_presentation_tests::paintCompositesInOrderAndKeepsCourtyard. Legend/library and full exploded editing remain outstanding."
+          ]
+        },
+        {
+          "id": "presentation.layers",
+          "name": "Đầy đủ lớp chi tiết, nhóm, màu, nét và độ trong suốt",
+          "status": "partial",
+          "web": [
+            "reference-dialogs.mjs",
+            "reference-presentation-library.mjs",
+            "reference-layer-catalog.mjs",
+            "reference-model-style.mjs"
+          ],
+          "acceptance": [
+            "0.5.1: all 73 web classifiers; 1,062 feature cases and 27 line-width cases match the actual web functions.",
+            "Native layer editor includes color, opacity, outlines, widths, road hierarchy, canopies and graphic shadows; group/search filters and ordering. Save/reload/cancel tested. Actual dialog: validation/native-v051-layer-editor.jpg.",
+            "Shared native painter for map overlay, 2D and SVG/PDF; OpenGL paint composition, stroked lines and sorted translucency. Full all-symbol visual parity remains under review."
+          ]
+        },
+        {
+          "id": "presentation.labels",
+          "name": "Chú giải chuyên ngành và nhãn theo bộ sơ đồ",
+          "status": "pending",
+          "web": [
+            "reference-dialogs.mjs",
+            "reference-presentation-library.mjs",
+            "reference-layer-catalog.mjs",
+            "reference-model-style.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "presentation.presets",
+          "name": "Lưu/chọn phong cách riêng, lịch sử sử dụng",
+          "status": "pending",
+          "web": [
+            "reference-dialogs.mjs",
+            "reference-presentation-library.mjs",
+            "reference-layer-catalog.mjs",
+            "reference-model-style.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "explode",
+      "name": "Tách lớp và xếp sơ đồ",
+      "features": [
+        {
+          "id": "explode.explode",
+          "name": "Tách các tầng và khớp camera 3D",
+          "status": "partial",
+          "web": [
+            "reference-stack-core.mjs",
+            "reference-stack-camera.mjs",
+            "reference-stack.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ],
+          "evidence": [
+            "src/scene.cpp",
+            "src/viewport.cpp",
+            "validation/core-tests-v07.txt",
+            "validation/context-live-v07/exploded.png",
+            "validation/context-live-v07/review.json"
+          ],
+          "remaining": [
+            "Complete plate model/editor, grouped layer rules, labels, guides, overlays and stacking mode."
+          ]
+        },
+        {
+          "id": "explode.stack",
+          "name": "Xếp nhiều sơ đồ theo lớp tấm",
+          "status": "pending",
+          "web": [
+            "reference-stack-core.mjs",
+            "reference-stack-camera.mjs",
+            "reference-stack.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "explode.plates",
+          "name": "Thêm/nhân bản/ẩn/xóa/sắp xếp tấm",
+          "status": "pending",
+          "web": [
+            "reference-stack-core.mjs",
+            "reference-stack-camera.mjs",
+            "reference-stack.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "explode.view",
+          "name": "Khoảng cách, góc nâng, thu phóng và tự xoay",
+          "status": "partial",
+          "web": [
+            "reference-stack-core.mjs",
+            "reference-stack-camera.mjs",
+            "reference-stack.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "explode.overlays",
+          "name": "Viền, nhãn, đường dẫn và bối cảnh ngoài",
+          "status": "partial",
+          "web": [
+            "reference-stack-core.mjs",
+            "reference-stack-camera.mjs",
+            "reference-stack.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "explode.export",
+          "name": "Xuất bộ tách lớp theo trạng thái đang xem",
+          "status": "partial",
+          "web": [
+            "reference-stack-core.mjs",
+            "reference-stack-camera.mjs",
+            "reference-stack.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "environment",
+      "name": "Sơ đồ môi trường",
+      "features": [
+        {
+          "id": "environment.tmy",
+          "name": "Trạm TMY, hoa gió năm/mùa và nguồn/thời kỳ",
+          "status": "partial",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.sunpath",
+          "name": "Đường đi mặt trời năm, ngày/giờ, nền nhà nhìn xuyên",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.shadow",
+          "name": "Bóng đổ theo thời điểm và chiều cao thực có",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.sunlight",
+          "name": "Số giờ nắng và điều kiện dữ liệu",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.utci",
+          "name": "Tiện nghi nhiệt UTCI, đầu vào và nhãn giới hạn",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.flow",
+          "name": "Diễn họa dòng gió 2D có nguồn/giả định",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.slope",
+          "name": "Cao độ, địa hình và sơ đồ độ dốc",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.lst",
+          "name": "Landsat nhiệt độ bề mặt",
+          "status": "partial",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.ndvi",
+          "name": "Sentinel NDVI",
+          "status": "partial",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.flood",
+          "name": "JRC ngập sông RP100",
+          "status": "partial",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.canopy",
+          "name": "Chiều cao tán cây",
+          "status": "partial",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.population",
+          "name": "WorldPop dân số",
+          "status": "partial",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.era5",
+          "name": "ERA5 không khí theo cửa sổ nguồn",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.cams",
+          "name": "CAMS PM2.5 theo cửa sổ nguồn",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "environment.coverage",
+          "name": "Giữ ô nodata và phạm vi nguồn, không ngoại suy",
+          "status": "verified",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "native_core_tests: climateCoverageIsExplicit / gridNodataStaysTransparent"
+          ]
+        },
+        {
+          "id": "environment.missing",
+          "name": "Giữ các lớp web chưa có mô hình ở trạng thái không khả dụng",
+          "status": "pending",
+          "web": [
+            "reference-environment-menu.mjs",
+            "reference-environment.mjs",
+            "reference-sunpath.mjs",
+            "reference-slope.mjs"
+          ],
+          "acceptance": [
+            "Không tạo số liệu giả cho tầm nhìn, hệ số nhìn trời, tiếng ồn, ùn tắc hay bức xạ chưa có đầu vào."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "analysis",
+      "name": "Phân tích, tỷ lệ và Site Intelligence",
+      "features": [
+        {
+          "id": "analysis.ratios",
+          "name": "Diện tích hợp, đặc/rỗng, độ phủ và tỷ lệ các thành phần",
+          "status": "pending",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Dùng hợp polygon; không lấy tổng dấu chân chồng lấn để thay độ phủ."
+          ]
+        },
+        {
+          "id": "analysis.buildings",
+          "name": "Thống kê chiều cao, công năng, số tầng, tuổi và nguồn",
+          "status": "partial",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "analysis.climate",
+          "name": "Biểu đồ nhiệt độ, độ ẩm, gió và bức xạ",
+          "status": "partial",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "analysis.walking",
+          "name": "Mạng đi bộ, điểm đến, thời gian và khả năng tiếp cận",
+          "status": "pending",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "analysis.facilities",
+          "name": "Tiện ích, khoảng cách và cơ cấu công năng",
+          "status": "pending",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "analysis.landcover",
+          "name": "Tổng hợp môi trường trong ranh",
+          "status": "pending",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "analysis.interpretation",
+          "name": "Kết luận có bằng chứng và giới hạn phương pháp",
+          "status": "pending",
+          "web": [
+            "reference-metrics.mjs",
+            "site-intelligence-core.mjs",
+            "site-intelligence-ui.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section",
+      "name": "Mặt cắt kiến trúc",
+      "features": [
+        {
+          "id": "section.cut",
+          "name": "Đặt/chỉnh/xoay/đảo tuyến cắt và clipping theo ranh",
+          "status": "pending",
+          "web": [
+            "reference-section.mjs",
+            "reference-section-session.mjs",
+            "reference-section-terrain.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "section.geometry",
+          "name": "Giao tuyến công trình giữ sân trong, chiều cao thiếu minh bạch",
+          "status": "pending",
+          "web": [
+            "reference-section.mjs",
+            "reference-section-session.mjs",
+            "reference-section-terrain.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "section.terrain",
+          "name": "Địa hình nguồn, đất/nước và khoảng trống dữ liệu",
+          "status": "pending",
+          "web": [
+            "reference-section.mjs",
+            "reference-section-session.mjs",
+            "reference-section-terrain.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "section.context",
+          "name": "Công trình phía sau, cây và ký hiệu",
+          "status": "pending",
+          "web": [
+            "reference-section.mjs",
+            "reference-section-session.mjs",
+            "reference-section-terrain.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "section.drawing",
+          "name": "Nét cắt, cao độ, ghi kích thước và tỷ lệ đứng/ngang",
+          "status": "pending",
+          "web": [
+            "reference-section.mjs",
+            "reference-section-session.mjs",
+            "reference-section-terrain.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "section.export",
+          "name": "SVG/PNG/PDF mặt cắt và lưu tuyến trong dự án",
+          "status": "pending",
+          "web": [
+            "reference-section.mjs",
+            "reference-section-session.mjs",
+            "reference-section-terrain.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "name": "Báo cáo và trình bày",
+      "features": [
+        {
+          "id": "report.site",
+          "name": "Site Report đầy đủ trang/mục/tài liệu nguồn",
+          "status": "pending",
+          "web": [
+            "reference-report.mjs",
+            "site-intelligence-report.mjs",
+            "site-intelligence-document.mjs",
+            "diagram-board.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "report.board",
+          "name": "Bảng trình bày và bộ diagram",
+          "status": "pending",
+          "web": [
+            "reference-report.mjs",
+            "site-intelligence-report.mjs",
+            "site-intelligence-document.mjs",
+            "diagram-board.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "report.exports",
+          "name": "PDF, SVG, PNG, CSV có chú giải và nguồn",
+          "status": "partial",
+          "web": [
+            "reference-report.mjs",
+            "site-intelligence-report.mjs",
+            "site-intelligence-document.mjs",
+            "diagram-board.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "report.roundtrip",
+          "name": "Giữ nội dung, đơn vị và ngôn ngữ khi lưu/mở",
+          "status": "partial",
+          "web": [
+            "reference-report.mjs",
+            "site-intelligence-report.mjs",
+            "site-intelligence-document.mjs",
+            "diagram-board.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "models",
+      "name": "Nhập phương án và xuất mô hình",
+      "features": [
+        {
+          "id": "models.rhino-import",
+          "name": "Nhập Rhino đúng loại hình học web đang hỗ trợ",
+          "status": "pending",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.placement",
+          "name": "Đơn vị, tỷ lệ, xoay, cao độ, đặt và áp dụng phương án",
+          "status": "pending",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.proposal",
+          "name": "Giữ mesh gốc, thuộc tính lớp, nền và hiện trạng",
+          "status": "pending",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.obj",
+          "name": "Xuất OBJ theo mét, trục đúng và nguồn",
+          "status": "partial",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.glb",
+          "name": "Xuất GLB kèm vật liệu và metadata",
+          "status": "pending",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.rhino-export",
+          "name": "Xuất 3DM đúng quyền gói và hình học",
+          "status": "pending",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.drawing",
+          "name": "SVG/PDF/PNG bản vẽ theo lớp và độ phân giải",
+          "status": "partial",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "models.batch",
+          "name": "Xuất đồng loạt/bộ tệp và metadata",
+          "status": "pending",
+          "web": [
+            "proposal-core.mjs",
+            "research-workspace.mjs",
+            "rhino-export.js",
+            "studio-export.mjs",
+            "model-package.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cfd",
+      "name": "Mô phỏng CFD thử nghiệm",
+      "features": [
+        {
+          "id": "cfd.2d",
+          "name": "CFD 2D, miền/lưới/biên và giả định chiều cao",
+          "status": "pending",
+          "web": [
+            "research-workspace.mjs",
+            "cfd-volume.mjs",
+            "cfd-figure.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "cfd.3d",
+          "name": "CFD thể tích D3Q19 thử nghiệm",
+          "status": "pending",
+          "web": [
+            "research-workspace.mjs",
+            "cfd-volume.mjs",
+            "cfd-figure.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "cfd.jobs",
+          "name": "Tác vụ, tiến độ, dừng/tiếp tục và phục hồi kết quả",
+          "status": "pending",
+          "web": [
+            "research-workspace.mjs",
+            "cfd-volume.mjs",
+            "cfd-figure.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "cfd.compare",
+          "name": "Hiện trạng/phương án và so sánh nền",
+          "status": "pending",
+          "web": [
+            "research-workspace.mjs",
+            "cfd-volume.mjs",
+            "cfd-figure.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "cfd.results",
+          "name": "Lát cắt, thể tích, vận tốc/áp suất và xuất kết quả",
+          "status": "pending",
+          "web": [
+            "research-workspace.mjs",
+            "cfd-volume.mjs",
+            "cfd-figure.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "cfd.quality",
+          "name": "Hội tụ, Reynolds, phạm vi và cảnh báo chưa kiểm định",
+          "status": "pending",
+          "web": [
+            "research-workspace.mjs",
+            "cfd-volume.mjs",
+            "cfd-figure.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "name": "Context và quả cầu",
+      "features": [
+        {
+          "id": "context.catalog",
+          "name": "Catalog Việt Nam, tìm/lọc, cửa sổ và chất lượng nguồn",
+          "status": "pending",
+          "web": [
+            "replica-context-core.mjs",
+            "replica-context.mjs",
+            "replica-context-globe.mjs",
+            "catalog-display.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "context.map",
+          "name": "Bản đồ Context, phạm vi, nhãn và chọn dữ liệu",
+          "status": "pending",
+          "web": [
+            "replica-context-core.mjs",
+            "replica-context.mjs",
+            "replica-context-globe.mjs",
+            "catalog-display.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "context.globe",
+          "name": "Quả cầu native, lớp toàn cầu và điều hướng",
+          "status": "pending",
+          "web": [
+            "replica-context-core.mjs",
+            "replica-context.mjs",
+            "replica-context-globe.mjs",
+            "catalog-display.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "context.fields",
+          "name": "Lớp môi trường đúng cửa sổ, chú giải và timeline",
+          "status": "pending",
+          "web": [
+            "replica-context-core.mjs",
+            "replica-context.mjs",
+            "replica-context-globe.mjs",
+            "catalog-display.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "context.actions",
+          "name": "Mở khu đất, tải gói/metadata và liên kết lựa chọn",
+          "status": "pending",
+          "web": [
+            "replica-context-core.mjs",
+            "replica-context.mjs",
+            "replica-context-globe.mjs",
+            "catalog-display.mjs"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "palette",
+      "name": "Palette",
+      "features": [
+        {
+          "id": "palette.generation",
+          "name": "23 nhóm tạo bảng màu, 3–8 màu",
+          "status": "pending",
+          "web": [
+            "palette-engine.mjs",
+            "palette-ui.mjs",
+            "palette.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "palette.editing",
+          "name": "Chỉnh/khóa/sắp xếp màu, sắc độ và tương phản",
+          "status": "pending",
+          "web": [
+            "palette-engine.mjs",
+            "palette-ui.mjs",
+            "palette.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "palette.gallery",
+          "name": "Thư viện, lọc/sắp xếp, yêu thích và lưu riêng",
+          "status": "pending",
+          "web": [
+            "palette-engine.mjs",
+            "palette-ui.mjs",
+            "palette.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "palette.application",
+          "name": "Áp dụng vai trò màu vào Site",
+          "status": "pending",
+          "web": [
+            "palette-engine.mjs",
+            "palette-ui.mjs",
+            "palette.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "palette.export",
+          "name": "Sao chép và xuất JSON/PNG/SVG theo web",
+          "status": "pending",
+          "web": [
+            "palette-engine.mjs",
+            "palette-ui.mjs",
+            "palette.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "account",
+      "name": "Tài khoản và trang phụ",
+      "features": [
+        {
+          "id": "account.oauth",
+          "name": "Google OAuth cùng tài khoản web, lưu phiên an toàn",
+          "status": "pending",
+          "web": [
+            "identity.js",
+            "pro-access.js",
+            "account.mjs",
+            "billing-admin.mjs",
+            "releases.html",
+            "source-audit.html",
+            "methods.html",
+            "privacy.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "account.plans",
+          "name": "Free/Plus/Pro/Enterprise, quyền và giới hạn thực từ backend",
+          "status": "pending",
+          "web": [
+            "identity.js",
+            "pro-access.js",
+            "account.mjs",
+            "billing-admin.mjs",
+            "releases.html",
+            "source-audit.html",
+            "methods.html",
+            "privacy.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "account.checkout",
+          "name": "Đơn hàng, chuyển khoản và trạng thái cấp quyền",
+          "status": "pending",
+          "web": [
+            "identity.js",
+            "pro-access.js",
+            "account.mjs",
+            "billing-admin.mjs",
+            "releases.html",
+            "source-audit.html",
+            "methods.html",
+            "privacy.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "account.admin",
+          "name": "Trang đối soát và quản trị theo vai trò thật",
+          "status": "pending",
+          "web": [
+            "identity.js",
+            "pro-access.js",
+            "account.mjs",
+            "billing-admin.mjs",
+            "releases.html",
+            "source-audit.html",
+            "methods.html",
+            "privacy.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "account.releases",
+          "name": "Release notes, nguồn/phương pháp và trang phụ",
+          "status": "pending",
+          "web": [
+            "identity.js",
+            "pro-access.js",
+            "account.mjs",
+            "billing-admin.mjs",
+            "releases.html",
+            "source-audit.html",
+            "methods.html",
+            "privacy.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        },
+        {
+          "id": "account.links",
+          "name": "Liên kết dự án/sản phẩm và phục hồi trạng thái",
+          "status": "pending",
+          "web": [
+            "identity.js",
+            "pro-access.js",
+            "account.mjs",
+            "billing-admin.mjs",
+            "releases.html",
+            "source-audit.html",
+            "methods.html",
+            "privacy.html"
+          ],
+          "acceptance": [
+            "Có luồng thao tác native, kết quả và trạng thái lỗi tương đương web; kiểm tra trên cùng dữ liệu nguồn."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+GroundAtlas Desktop 2.3.0 — Software License & Third-Party Open-Source Notices
+==============================================================================
+
+COMMERCIAL SOFTWARE LICENSE (GROUNDATLAS DESKTOP 2.x)
+Copyright (c) 2026 GroundAtlas. All rights reserved.
+- Free Edition: Unlimited viewing, live OSM loading, 2D/3D exploration, sun study & planning tile overlays.
+- Pro Lifetime 2.x Edition (Per-Seat): One-time purchase granting a perpetual license for GroundAtlas
+  Desktop 2.x on the number of active machines (seats) purchased (1 Seat = 1 Machine), with self-service
+  machine transfers (up to 2 swaps per 180 days) and 14-day offline lease operation.
+
+THIRD-PARTY OPEN-SOURCE LIBRARIES & DATA ATTRIBUTIONS
+-----------------------------------------------------
+
+1. Qt 6.8.3 — GNU Lesser General Public License v3 (LGPL-3.0)
+   Copyright (C) The Qt Company Ltd.
+   GroundAtlas Desktop dynamically links to unmodified Qt 6.8.3 shared libraries (.dll).
+   Full license text: https://www.gnu.org/licenses/lgpl-3.0.html
+   Source code: https://download.qt.io/official_releases/qt/6.8/6.8.3/
+
+2. MapLibre Native for Qt 3.0 — BSD 2-Clause License
+   Copyright (c) MapLibre contributors & Mapbox, Inc.
+   https://github.com/maplibre/maplibre-native-qt
+
+3. Monocypher 4.0.2 (including RFC 8032 Ed25519) — CC0-1.0 / BSD 2-Clause License
+   Copyright (c) 2017-2023 Loup Vaillant.
+   https://monocypher.org
+
+4. Mapbox Earcut — ISC License
+   Copyright (c) 2015, Mapbox.
+   https://github.com/mapbox/earcut.hpp
+
+5. OpenStreetMap Data & OpenFreeMap Tiles — Open Database License (ODbL 1.0)
+   Map data © OpenStreetMap contributors (https://www.openstreetmap.org/copyright).
+
+6. SketchUp C API Integration
+   Direct .SKP import loads the user's locally installed SketchUpAPI.dll at runtime.
+   No Trimble proprietary binaries are redistributed with GroundAtlas Desktop.

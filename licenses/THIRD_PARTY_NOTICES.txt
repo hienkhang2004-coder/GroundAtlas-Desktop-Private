@@ -1,0 +1,55 @@
+GroundAtlas Desktop native preview 0.9.0
+
+Qt 6.8.3 — Qt Project / The Qt Company and contributors
+Dynamically linked QtCore, QtGui, QtWidgets, QtNetwork, QtOpenGL,
+QtOpenGLWidgets and QtSvg, and applicable plugins.
+Qt is used under the applicable GNU LGPL version 3 terms for these modules.
+Full LGPL/GPL texts and Qt's SPDX component records are included in qt/.
+Exact upstream source tags:
+https://github.com/qt/qtbase/tree/v6.8.3
+https://github.com/qt/qtsvg/tree/v6.8.3
+Source distribution archive:
+https://download.qt.io/archive/qt/6.8/6.8.3/single/
+These Qt libraries have not been modified by this project. They remain
+replaceable DLLs. Their own third-party notices are in the supplied SPDX files.
+
+GCC / MinGW-w64 runtime
+Runtime DLLs are from MinGW 13.1.0 x86_64, as supplied with the Qt toolchain.
+Applicable GCC license texts and the runtime library exception are in gcc/.
+The winpthreads COPYING file is in winpthreads/.
+https://gcc.gnu.org/onlinedocs/libstdc++/manual/license.html
+https://www.mingw-w64.org/
+
+earcut.hpp 2.2.4 — Mapbox
+ISC license, reproduced in earcut-ISC.txt.
+https://github.com/mapbox/earcut.hpp/tree/v2.2.4
+
+MapLibre Native for Qt 3.0.0 — MapLibre contributors / Mapbox
+Dynamically linked QMapLibre.dll. BSD-2-Clause and core/vendor notices are in
+maplibre/. See maplibre/BUILD_SOURCE.txt for exact source commits and the recorded
+compatibility and shared-camera changes used in the Windows SDK.
+https://github.com/maplibre/maplibre-native-qt
+https://github.com/maplibre/maplibre-native
+
+Data and services
+OpenFreeMap provides the Positron vector basemap style, glyphs and sprites.
+OpenMapTiles schema and OpenStreetMap data attribution are displayed in map
+view and geographic PNG exports. These are presentation resources, not the
+loaded site dataset. Metadata: data/basemap/source.json.
+https://openfreemap.org/
+https://www.openmaptiles.org/
+© OpenStreetMap contributors — ODbL 1.0
+https://www.openstreetmap.org/copyright
+Overture Maps Foundation, Google Open Buildings and ESA WorldCover credits
+are retained in data/hoankiem.gatlas and exports that use that saved window.
+Climate TMYx: Lawrie, Linda K, Drury B Crawley. 2026. Development of Global
+Typical Meteorological Years (TMYx), climate.onebuilding.org.
+Each station retains its source URL, period, location and citation.
+Environmental rasters retain their own publisher, method, date, license,
+source URL, geographic extent and missing values in data/environment/.
+Photon place search uses the public Photon service based on OpenStreetMap.
+https://photon.komoot.io/
+
+GroundAtlas application source and product assets remain the project owner's
+work. Supplying the third-party notices does not grant rights to unrelated
+brands, data services or source datasets beyond their own terms.

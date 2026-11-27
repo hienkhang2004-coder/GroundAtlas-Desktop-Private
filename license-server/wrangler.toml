@@ -1,0 +1,25 @@
+﻿name = "groundatlas-license-server"
+main = "src/worker.ts"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+APP_LATEST_VERSION = "2.3.1"
+APP_DOWNLOAD_URL = "https://github.com/hienkhang2004-coder/GroundAtlas/raw/main/GroundAtlas-Desktop-2.3.1-Setup.exe"
+APP_UPDATE_NOTES = "Tự động kiểm tra & thông báo phiên bản mới ngay trong app, hỗ trợ khóa ký offline Ed25519 và tối ưu bộ cài gọn nhẹ."
+OFFLINE_LEASE_DAYS = "14"
+MAX_SWAPS_PER_180_DAYS = "2"
+WELCOME_OFFER_HOURS = "48"
+WELCOME_PRICE_1_SEAT = "99000"
+VIETQR_BANK_BIN = "970422"
+VIETQR_ACCOUNT_NO = "0978786930"
+VIETQR_ACCOUNT_NAME = "BACH THAI KHANG"
+
+# Bind your Cloudflare D1 database after running:
+#   npx wrangler d1 create groundatlas-licenses
+#   npx wrangler d1 migrations apply groundatlas-licenses --remote
+[[d1_databases]]
+binding = "DB"
+database_name = "groundatlas-licenses"
+database_id = "83064ffa-ff3a-471b-869b-ac71143e308b"
+migrations_dir = "migrations"

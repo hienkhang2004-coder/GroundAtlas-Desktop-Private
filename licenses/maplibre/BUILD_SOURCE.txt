@@ -1,0 +1,35 @@
+MapLibre Native for Qt 3.0.0 / GroundAtlas Windows x64 SDK
+
+Qt bindings: https://github.com/maplibre/maplibre-native-qt
+Commit: d929c783737120787b43417d9ef05da88da75dfd
+Native core submodule: https://github.com/maplibre/maplibre-native
+Commit: 0a4e5a4474b54a36ffbe331a0f058124b5a4783a
+
+Build: Qt 6.8.3, MinGW 13.1 x64, Release, internal SQLite, shared libraries,
+Qt Widgets enabled; Qt Location disabled. scripts/build-maplibre.ps1 is the
+reproducible build entry. Initialize the pinned native/vendor submodules.
+
+Local compatibility changes, 27 October 2026:
+1. Windows logging is synchronous through the existing thread-safe Qt sink.
+   The upstream process-lifetime logging worker otherwise remains until the
+   DLL CRT unload, after Windows has stopped worker threads. GDB confirmed a
+   hang in ThreadedSchedulerBase/condition_variable/pthread_cond_destroy.
+   Allocate a logging scheduler only when threaded logging is actually used.
+2. Qt HTTP requests have a 15-second idle transfer timeout instead of an
+   unbounded wait. An opt-in GA_NATIVE_NETWORK_TRACE prints public basemap
+   request/reply diagnostics; disabled in normal use.
+
+3. The GroundAtlas setCustomProjection extension keeps native vector rendering,
+   inverse coordinates and tile coverage under one double-precision camera
+   matrix. It validates finite/invertible input. Custom projections allow
+   native camera metadata up to 85 degrees, while the standard camera retains
+   its upstream pitch cap. Map geometry/labels/sources remain native.
+
+All source changes are recorded in patch-maplibre.py alongside this file.
+The SDK build applies that idempotent, source-checked patch before compiling.
+No shader/source-data or attribution behavior has been removed.
+
+The app uses OpenGL 3.3 compatibility-profile contexts for the map and the
+architectural viewport. Vector tiles and the model share the scene projection;
+map/HUD composition is native.
+DLL replacement is allowed. Core/vendor license notices are retained here.

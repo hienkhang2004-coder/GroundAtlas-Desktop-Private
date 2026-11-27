@@ -1,0 +1,125 @@
+GroundAtlas Desktop parity — active work, not completed
+27 October 2026 / Asia/Bangkok
+
+Accepted product target
+The final native application must cover all supported GroundAtlas web features,
+data behavior, outputs, access rules and user workflows. The user requested a
+modern macOS-style shell for the entire desktop application, including real
+close/minimize/maximize controls and closable document tabs. No WebView,
+Electron or Tauri wrapper is permitted.
+
+Baseline
+The frozen first-party local web reference is GroundAtlas 2.5.0 under
+../groundatlas-v2/public. scripts/audit-parity.mjs hashes the reference files
+and validates the source references for every checklist item.
+features.json has 103 acceptance items in 15 groups. Partial or implemented
+is never equivalent to verified parity. baseline.json.complete stays false
+until all supported workflows have evidence. Do not turn missing web models
+into fictitious native results just to fill the checklist.
+
+Current implementation batch — 0.10.0
+Native Site selection and three retained source windows were added in 0.4.
+The 0.5 batch ports all 73 web layer predicates and the 59 style/diagram paint
+states into C++. Layer order, colors, opacity, outlines, line widths, tree
+symbols and graphic shadow controls have a native editor and file round-trip.
+The geographic overlay, 2D viewport and SVG/PDF share the Qt painter. OpenGL
+composites coincident feature paints and sorts transparent triangles by depth.
+Actual Windows GPU review is separate from the offscreen UI/pixel tests.
+0.6 adds a real MapLibre Native for Qt global vector map, styled from the
+web-derived layer paints with an original-style toggle. The source project
+remains unchanged by context tiles. It uses native OpenGL, glyphs/sprites and
+a SQLite viewport cache, with a bounded HTTP timeout and explicit loading
+state. Context choice is saved per document. Native close after visiting map
+and 3D is verified by checking that the process has actually exited.
+
+0.7 adds native vector context directly to the architectural viewport with
+one shared double-precision projection for tile rendering, culling and inverse
+coordinates. Render-only Mercator coordinates preserve exact geographical
+registration; source/analysis and model export coordinates remain unchanged.
+All five camera presets now match the actual web camera adapter. Perspective
+ground depth banding and empty exploded plates were repaired after visual QA.
+Visible stack height drives framing. Both languages, preset selection, wheel
+zoom, context restyling and native close were checked in the packaged UI.
+
+0.8 shares center and the web's logical zoom convention across Map, 2D and
+3D, including preset changes, resize, tab switching and canonical saved views.
+The architectural camera now navigates worldwide with a view-centred Mercator
+render frame, longitude wrapping and a latitude extent of +/-85 degrees.
+Source geometry, analysis and exports keep their original site metre frame.
+GPU checks visit New York, Sydney, low-zoom world context, the antimeridian,
+and return to Hoan Kiem; old camera and isolated site checks are retained.
+The scale bar measures the local rendered ground rather than the source-site
+latitude or a fixed architectural fitting scale.
+
+0.9 adds bounded OSM GET requests, two providers, a 50-second total network
+budget, 2-second start pacing, persistent 6-hour / 8-window cache and explicit
+refresh. The context-enrichment action creates a copy in a new tab, retains
+primary buildings/heights/holes and deduplicates known OSM record identities.
+Source timestamps, cache age and attempts are recorded. Actual web functions
+produce differential selector, height, geometry and enrichment fixtures.
+Controlled TCP and native UI tests cover failure, cancellation, expiry,
+corruption, cache limits, repeat enrichment, refresh and large merged data.
+The loaded-size controls now show small/large source extents without clamping;
+request validation remains a separate guard. A destructor signal into a dying
+window was fixed, and close during an active network request was checked.
+
+Real source integration remains UNVERIFIED: source-live-get-v09/review.json
+records two 25-second connection deadlines, no delivered data, and unchanged
+primary source geometry (17 buildings). The system HTTP status probe also
+failed. Do not turn these failures into a passed live-service claim. The web's
+/api/osm is protected by verified account/quota handling; do not route around
+that protection or use browser cookies as a native authentication substitute.
+Native OAuth/backend entitlements must be implemented for protected delivery.
+
+0.10 adds all seven GeoJSON overlay roles inside the current document, file
+lists and per-file removal, transactional asynchronous processing and stable
+origin-document delivery. Raw WGS84 data/properties/provenance are retained
+in schema 3 projects (schemas 1/2 remain readable), so reclipping can recover
+parts and supply geometry outside the primary window without inflating its
+coverage. Line partitions and displayed counts match the actual web importer.
+Imports have the web limits (20 MB / 50,000 records / 300,000 points per file),
+with native retained geometry and serialized storage budgets checked before
+mutation. Source identity collisions, holes, metre/feet heights, unknown flat
+heights, cancellation, malformed/oversized data and zero-visible groups are
+tested. UI import/removal retains concurrent notes, layers and navigation.
+A real GPU check exposed an inspector read that inserted a null source field;
+this was fixed and regression-tested. Final 0.10 has 120 passing checks and
+12 actual GPU frames, plus packaged native file-picker and close verification.
+Failed/debug attempts remain separate evidence. Public OSM was not retried.
+
+This remains a partial web port. Full style library, Context, Palette and
+advanced workflows remain outstanding. SDK changes are recorded under
+licenses/maplibre and scripts/patch-maplibre.py.
+
+Next batches, retaining the existing goal
+1. Scale/test GeoJSON multipart and long-line imports against the web maximum,
+   including inputs that clip into more than 75,000 native parts. Existing
+   import workflows pass within the current native budgets; project.geojson
+   remains partial until this wider scope is proven. Continue source catalogue/coverage and
+   secure native OAuth/backend source delivery. Recheck real public OSM only
+   when connectivity changes; retain the existing failure evidence.
+   Expand navigation checks to cold
+   caches, provider outage, GPU fallback, high DPI and picking/annotations.
+   Preserve all 103 requirements; global Mercator context is not Context/Globe.
+2. Complete style-library previews/custom presets, 3D symbols and all
+   diagram/explode plate editing, legends and
+   overlays. Preserve the requested macOS shell around the familiar web tools.
+3. Port ratios using polygon union, site intelligence, section/terrain,
+   full report/board output, sun path, shadows and environment calculations.
+4. Port Context/Globe and Palette with their source and export workflows.
+5. Port Rhino/proposal/advanced exports and CFD job/result workflows, retaining
+   the web solver's experimental scope and convergence labels.
+6. Add secure native OAuth/session storage and use real backend entitlements,
+   billing and role restrictions. Never ship server credentials or grant
+   native-local privileges as a substitute for backend authorization.
+7. Verify every workflow in both languages and units, round-trip files,
+   malformed data, no-coverage states, task cancellation and service errors;
+   then check functional/visual parity against the frozen web baseline.
+
+Important state and continuity
+Web source/production deployment has not been changed by this desktop work.
+The old portable folder may be running in another user window. A normal
+sandbox Get-Process can miss processes launched outside that sandbox. Never
+assume no process exists just because an unprivileged listing is empty.
+Do not kill old previews or overwrite locked binaries; use versioned folders.
+Current goal remains active until the full product target is met.

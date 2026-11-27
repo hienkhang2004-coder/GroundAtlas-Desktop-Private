@@ -1,0 +1,274 @@
+{
+  "schema": 1,
+  "title": "Hanoi Future Master Plan Reference Dataset (2045-2065)",
+  "legal_basis": [
+    "Quyết định 1668/QĐ-TTg (27/12/2024) — Điều chỉnh Quy hoạch chung Thủ đô Hà Nội đến 2045, tầm nhìn 2065",
+    "Quyết định 6075/QĐ-UBND (03/11/2026) — Điều chỉnh tổng thể Quy hoạch phân khu đô thị Sông Hồng 1/5000",
+    "QCVN 01:2021/BXD & Thông tư 04/2022/TT-BXD — Hệ thống ký hiệu và bảng màu quy hoạch xây dựng"
+  ],
+  "disclaimer": "Dữ liệu khung quy hoạch tham khảo phục vụ phân tích kiến trúc – đô thị; không thay thế văn bản chỉ giới đường đỏ hoặc thông tin quy hoạch pháp lý của cơ quan có thẩm quyền.",
+  "subdivisions": [
+    {
+      "code": "H1-1B",
+      "name_vi": "Phân khu H1-1B · Hồ Hoàn Kiếm & phụ cận",
+      "name_en": "Subdivision H1-1B · Hoan Kiem Lake Heritage Core",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 16.0,
+      "max_height_note": "Ven hồ ≤ 16 m (4 tầng) · lớp ngoài 20–32 m",
+      "density_note": "MĐXD bảo tồn ≤ 55–65%, ưu tiên không gian đi bộ",
+      "orientation_vi": "Khu vực bảo tồn di sản đặc biệt quanh Hồ Gươm, kết nối ga ngầm Metro C9 và quảng trường Đông Kinh Nghĩa Thục.",
+      "orientation_en": "Special heritage preservation zone around Hoan Kiem Lake linked to underground Metro Station C9.",
+      "ring": [[105.8475, 21.0235], [105.8595, 21.0235], [105.8595, 21.0332], [105.8475, 21.0332]]
+    },
+    {
+      "code": "H1-1A",
+      "name_vi": "Phân khu H1-1A · Khu Phố Cổ Hà Nội",
+      "name_en": "Subdivision H1-1A · Hanoi Old Quarter",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 14.0,
+      "max_height_note": "Bảo tồn ≤ 12–16 m (3–4 tầng), giữ cấu trúc phố nghề",
+      "density_note": "Giảm mật độ dân số nội đô, mở rộng tuyến đi bộ",
+      "orientation_vi": "Khu phố cổ 36 phố phường, bảo tồn di tích kiến trúc truyền thống và kiểm soát nghiêm ngặt chiều cao.",
+      "orientation_en": "Historic 36-street Old Quarter under strict conservation height controls.",
+      "ring": [[105.8445, 21.0332], [105.8565, 21.0332], [105.8565, 21.0415], [105.8445, 21.0415]]
+    },
+    {
+      "code": "H1-1C",
+      "name_vi": "Phân khu H1-1C · Khu Phố Cũ Hoàn Kiếm – Hai Bà Trưng",
+      "name_en": "Subdivision H1-1C · French Quarter",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 28.0,
+      "max_height_note": "Phố cũ 18–28 m · điểm nhấn trục Lý Thường Kiệt / Trần Hưng Đạo ≤ 45 m",
+      "density_note": "MĐXD 50–60%, bảo tồn biệt thự Pháp cổ",
+      "orientation_vi": "Khu phố cũ ô bàn cờ, bảo tồn quỹ biệt thự Pháp cổ kết hợp trung tâm tài chính – văn hóa – thương mại.",
+      "orientation_en": "Historic gridded French Quarter blending villa conservation with cultural & commercial nodes.",
+      "ring": [[105.8410, 21.0155], [105.8620, 21.0155], [105.8620, 21.0235], [105.8410, 21.0235]]
+    },
+    {
+      "code": "H1-2",
+      "name_vi": "Phân khu H1-2 · Ba Đình (Trung tâm Chính trị)",
+      "name_en": "Subdivision H1-2 · Ba Dinh Civic Core",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 24.0,
+      "max_height_note": "Vùng lõi Ba Đình ≤ 18 m · trục chuyển tiếp 24–36 m",
+      "density_note": "Kiểm soát tầm nhìn trục Quảng trường Ba Đình – Hồ Tây",
+      "orientation_vi": "Trung tâm hành chính – chính trị quốc gia, kiểm soát nghiêm chiều cao bảo vệ cảnh quan Ba Đình.",
+      "orientation_en": "National political and administrative core with strict height & view-corridor controls.",
+      "ring": [[105.8050, 21.0220], [105.8445, 21.0220], [105.8445, 21.0520], [105.8050, 21.0520]]
+    },
+    {
+      "code": "H1-3",
+      "name_vi": "Phân khu H1-3 · Đống Đa",
+      "name_en": "Subdivision H1-3 · Dong Da",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 36.0,
+      "max_height_note": "Tái thiết khu tập thể cũ theo TOD Metro 36–60 m",
+      "density_note": "Tăng không gian công cộng & bãi đỗ xe ngầm",
+      "orientation_vi": "Cải tạo chỉnh trang đô thị lịch sử và tái thiết chung cư cũ gắn với các ga đường sắt đô thị.",
+      "orientation_en": "Urban renewal and transit-oriented collective housing redevelopment.",
+      "ring": [[105.8050, 21.0000], [105.8445, 21.0000], [105.8445, 21.0220], [105.8050, 21.0220]]
+    },
+    {
+      "code": "R1-R5",
+      "name_vi": "Phân khu Đô thị Sông Hồng (1/5000)",
+      "name_en": "Red River Urban Subdivision (1:5000)",
+      "decision": "QĐ 6075/QĐ-UBND",
+      "max_height_m": 32.0,
+      "max_height_note": "Thấp dần về phía bờ sông, ưu tiên công viên thoát lũ",
+      "density_note": "Trục xanh cảnh quan trung tâm Thủ đô (11.419 ha)",
+      "orientation_vi": "Trục cảnh quan trung tâm, không gian văn hóa, đổi mới sáng tạo và đại lộ ven sông Hồng.",
+      "orientation_en": "Central green landscape spine, flood-resilient parks and waterfront boulevards.",
+      "ring": [[105.8565, 20.9900], [105.8980, 20.9900], [105.8980, 21.0950], [105.8565, 21.0950]]
+    },
+    {
+      "code": "H2-1",
+      "name_vi": "Phân khu H2-1 · Tây Hồ – Cầu Giấy – Cổ Nhuế",
+      "name_en": "Subdivision H2-1 · Tay Ho – Cau Giay",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 75.0,
+      "max_height_note": "Trục Tây Hồ Tây – Cầu Giấy 45–120 m (TOD)",
+      "density_note": "Trung tâm tài chính, ngoại giao & công nghệ mới",
+      "orientation_vi": "Khu đô thị mở rộng hiện đại gắn trục Tây Hồ Tây, Hồ Tây và tuyến Metro số 2.",
+      "orientation_en": "Modern diplomatic, tech and mixed-use urban expansion anchored by Metro Line 2.",
+      "ring": [[105.7600, 21.0320], [105.8450, 21.0320], [105.8450, 21.0900], [105.7600, 21.0900]]
+    },
+    {
+      "code": "H2-2",
+      "name_vi": "Phân khu H2-2 · Mỹ Đình – Cầu Giấy – Thanh Xuân",
+      "name_en": "Subdivision H2-2 · My Dinh – Cau Giay",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 90.0,
+      "max_height_note": "Cao tầng tập trung Vành đai 3 / Mỹ Đình 60–150 m",
+      "density_note": "Cực phát triển thương mại – thể thao phía Tây",
+      "orientation_vi": "Trung tâm thương mại dịch vụ, thể thao và công nghệ cao phía Tây đường Vành đai 3.",
+      "orientation_en": "Western high-rise business, sports and technology hub along Ring Road 3.",
+      "ring": [[105.7450, 20.9880], [105.8150, 20.9880], [105.8150, 21.0350], [105.7450, 21.0350]]
+    },
+    {
+      "code": "N1-N11",
+      "name_vi": "Đô thị phía Bắc Sông Hồng · Đông Anh",
+      "name_en": "Northern Red River City · Dong Anh",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 100.0,
+      "max_height_note": "Thành phố thông minh trục Nhật Tân – Nội Bài",
+      "density_note": "Đô thị dịch vụ, tài chính, hội chợ quốc gia",
+      "orientation_vi": "Cực tăng trưởng mới phía Bắc sông Hồng gắn trục Nhật Tân – Nội Bài và cầu Tứ Liên.",
+      "orientation_en": "New northern smart-city growth pole connected via Nhat Tan & Tu Lien bridges.",
+      "ring": [[105.7800, 21.0900], [105.9150, 21.0900], [105.9150, 21.1850], [105.7800, 21.1850]]
+    },
+    {
+      "code": "HN-GEN",
+      "name_vi": "Vùng Quy hoạch chung Thủ đô Hà Nội 2045",
+      "name_en": "Greater Hanoi Master Plan 2045",
+      "decision": "QĐ 1668/QĐ-TTg",
+      "max_height_m": 45.0,
+      "max_height_note": "Theo phân khu & chỉ giới đường đỏ địa phương",
+      "density_note": "Mô hình đô thị đa cực – đa trung tâm 2045–2065",
+      "orientation_vi": "Phạm vi điều chỉnh Quy hoạch chung Thủ đô Hà Nội đến năm 2045, tầm nhìn 2065 (3.359,84 km²).",
+      "orientation_en": "Greater Hanoi Capital Master Plan to 2045, vision to 2065.",
+      "ring": [[105.2800, 20.5600], [106.0300, 20.5600], [106.0300, 21.3900], [105.2800, 21.3900]]
+    }
+  ],
+  "corridors": [
+    {
+      "id": "metro-line-2",
+      "name": "Metro Tuyến 2 (Nam Thăng Long – Trần Hưng Đạo)",
+      "kind": "metro",
+      "color": "#7c3aed",
+      "width_m": 12.0,
+      "underground": true,
+      "status": "QĐ 1668/QĐ-TTg · Đoạn ngầm nội đô",
+      "coords": [
+        [105.7920, 21.0760], [105.8020, 21.0610], [105.8085, 21.0460],
+        [105.8260, 21.0435], [105.8390, 21.0412], [105.8473, 21.0402],
+        [105.8482, 21.0365], [105.8495, 21.0332], [105.8520, 21.0315],
+        [105.8537, 21.0289], [105.8536, 21.0262], [105.8531, 21.0241],
+        [105.8529, 21.0226], [105.8522, 21.0165], [105.8515, 21.0060]
+      ]
+    },
+    {
+      "id": "metro-line-3-ext",
+      "name": "Metro Tuyến 3 kéo dài (Ga Hà Nội – Hoàng Mai)",
+      "kind": "metro",
+      "color": "#a855f7",
+      "width_m": 12.0,
+      "underground": true,
+      "status": "QĐ 1668/QĐ-TTg · Đoạn ngầm Trần Hưng Đạo",
+      "coords": [
+        [105.8120, 21.0298], [105.8270, 21.0278], [105.8355, 21.0262],
+        [105.8414, 21.0242], [105.8470, 21.0234], [105.8529, 21.0226],
+        [105.8588, 21.0214], [105.8625, 21.0140], [105.8630, 20.9960]
+      ]
+    },
+    {
+      "id": "metro-line-1",
+      "name": "Metro Tuyến 1 (Yên Viên – Ngọc Hồi)",
+      "kind": "metro",
+      "color": "#6366f1",
+      "width_m": 12.0,
+      "underground": false,
+      "status": "QĐ 1668/QĐ-TTg · Hành lang đường sắt xuyên tâm",
+      "coords": [
+        [105.8750, 21.0500], [105.8587, 21.0427], [105.8482, 21.0405],
+        [105.8468, 21.0355], [105.8458, 21.0308], [105.8442, 21.0275],
+        [105.8414, 21.0242], [105.8418, 21.0120], [105.8415, 20.9850]
+      ]
+    },
+    {
+      "id": "red-river-axis",
+      "name": "Trục Đại lộ Cảnh quan Sông Hồng (QĐ 6075/QĐ-UBND)",
+      "kind": "river_axis",
+      "color": "#0284c7",
+      "width_m": 24.0,
+      "underground": false,
+      "status": "QĐ 6075/QĐ-UBND (11/2026) · QHPK Sông Hồng 1/5000",
+      "coords": [
+        [105.8360, 21.0800], [105.8455, 21.0620], [105.8515, 21.0465],
+        [105.8555, 21.0370], [105.8576, 21.0315], [105.8585, 21.0270],
+        [105.8602, 21.0218], [105.8635, 21.0140], [105.8730, 20.9960]
+      ]
+    },
+    {
+      "id": "bridge-tran-hung-dao",
+      "name": "Cầu Trần Hưng Đạo tương lai (Hoàn Kiếm – Long Biên)",
+      "kind": "bridge",
+      "color": "#e11d48",
+      "width_m": 22.0,
+      "underground": false,
+      "status": "QĐ 1668/QĐ-TTg · Cầu vượt sông Hồng mới",
+      "coords": [
+        [105.8529, 21.0226], [105.8588, 21.0216], [105.8635, 21.0222],
+        [105.8725, 21.0242], [105.8840, 21.0275]
+      ]
+    },
+    {
+      "id": "bridge-tu-lien",
+      "name": "Cầu Tứ Liên tương lai (Tây Hồ – Đông Anh)",
+      "kind": "bridge",
+      "color": "#e11d48",
+      "width_m": 24.0,
+      "underground": false,
+      "status": "QĐ 1668/QĐ-TTg · Kết nối Bắc Sông Hồng",
+      "coords": [
+        [105.8315, 21.0595], [105.8410, 21.0690], [105.8540, 21.0830], [105.8690, 21.0970]
+      ]
+    },
+    {
+      "id": "hoankiem-pedestrian-spine",
+      "name": "Trục Không gian Đi bộ mở rộng Hồ Gươm – Phố Cổ",
+      "kind": "road_widening",
+      "color": "#16a34a",
+      "width_m": 14.0,
+      "underground": false,
+      "status": "QHPK H1-1B · Không gian công cộng ưu tiên đi bộ",
+      "coords": [
+        [105.8515, 21.0318], [105.8535, 21.0310], [105.8542, 21.0285],
+        [105.8540, 21.0252], [105.8512, 21.0254], [105.8504, 21.0288], [105.8515, 21.0318]
+      ]
+    }
+  ],
+  "stations": [
+    { "code": "C8", "name": "Ga ngầm C8 · Hàng Đậu", "line": "Metro Tuyến 2", "lat": 21.0402, "lon": 105.8473, "color": "#7c3aed", "underground": true },
+    { "code": "C9", "name": "Ga ngầm C9 · Hồ Hoàn Kiếm", "line": "Metro Tuyến 2", "lat": 21.0289, "lon": 105.8537, "color": "#7c3aed", "underground": true },
+    { "code": "C10", "name": "Ga ngầm C10 · Trần Hưng Đạo", "line": "Metro Tuyến 2 & 3", "lat": 21.0226, "lon": 105.8529, "color": "#a855f7", "underground": true },
+    { "code": "S12", "name": "Ga ngầm S12 · Ga Hà Nội", "line": "Metro Tuyến 1 & 3", "lat": 21.0242, "lon": 105.8414, "color": "#a855f7", "underground": true },
+    { "code": "C11", "name": "Ga Lò Đúc · Nhà Hát Lớn", "line": "Metro Tuyến 3", "lat": 21.0214, "lon": 105.8588, "color": "#a855f7", "underground": true }
+  ],
+  "zoning_envelopes": [
+    {
+      "code": "DI_SAN",
+      "label": "H1-1B · Bảo tồn ven Hồ Gươm (≤ 16 m)",
+      "max_height_m": 16.0,
+      "max_bcr_pct": 55,
+      "ring": [[105.8492, 21.0252], [105.8554, 21.0252], [105.8554, 21.0322], [105.8492, 21.0322]]
+    },
+    {
+      "code": "CC",
+      "label": "CC-01 · Trung tâm Hành chính – Văn hóa (≤ 24 m)",
+      "max_height_m": 24.0,
+      "max_bcr_pct": 48,
+      "ring": [[105.8544, 21.0268], [105.8578, 21.0268], [105.8578, 21.0315], [105.8544, 21.0315]]
+    },
+    {
+      "code": "HH",
+      "label": "HH-01 · Trục Thương mại Tràng Tiền – Hàng Khay (≤ 32 m)",
+      "max_height_m": 32.0,
+      "max_bcr_pct": 60,
+      "ring": [[105.8485, 21.0238], [105.8575, 21.0238], [105.8575, 21.0254], [105.8485, 21.0254]]
+    },
+    {
+      "code": "DI_SAN",
+      "label": "H1-1A · Chuyển tiếp Phố Cổ – Hàng Đào (≤ 14 m)",
+      "max_height_m": 14.0,
+      "max_bcr_pct": 65,
+      "ring": [[105.8478, 21.0322], [105.8555, 21.0322], [105.8555, 21.0355], [105.8478, 21.0355]]
+    },
+    {
+      "code": "ODT",
+      "label": "ODT-01 · Khu ở chỉnh trang Hàng Trống – Bảo Khánh (≤ 20 m)",
+      "max_height_m": 20.0,
+      "max_bcr_pct": 62,
+      "ring": [[105.8468, 21.0262], [105.8495, 21.0262], [105.8495, 21.0318], [105.8468, 21.0318]]
+    }
+  ]
+}

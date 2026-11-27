@@ -1,0 +1,150 @@
+{
+  "source": "Actual replica-map-core.mjs treeHash, including Unicode identities",
+  "colors": [
+    "#5a7d4e",
+    "#d0a54c",
+    "#4766aa"
+  ],
+  "cases": [
+    {
+      "id": "tree-0",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-1",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-2",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-3",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-4",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-5",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-6",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-7",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-8",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-9",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-10",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-11",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-12",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-13",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-14",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-15",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-16",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-17",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-18",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-19",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-20",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-21",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-22",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-23",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-24",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-25",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-26",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "tree-27",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-28",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "tree-29",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-30",
+      "color": "#4766aa"
+    },
+    {
+      "id": "tree-31",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "cây-xanh",
+      "color": "#5a7d4e"
+    },
+    {
+      "id": "cây-🌳",
+      "color": "#d0a54c"
+    },
+    {
+      "id": "🌲-🌳",
+      "color": "#4766aa"
+    }
+  ]
+}

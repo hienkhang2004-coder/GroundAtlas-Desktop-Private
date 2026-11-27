@@ -1,0 +1,19 @@
+{
+  "name": "groundatlas-license-server",
+  "version": "2.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "keygen": "node scripts/keygen.mjs",
+    "test": "node --experimental-strip-types scripts/local-test.mjs",
+    "dev": "wrangler dev",
+    "migrate:local": "wrangler d1 migrations apply groundatlas-licenses --local",
+    "migrate:remote": "wrangler d1 migrations apply groundatlas-licenses --remote",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261125.1",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.168.0"
+  }
+}

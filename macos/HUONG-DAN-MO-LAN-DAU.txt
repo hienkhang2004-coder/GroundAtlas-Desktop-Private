@@ -1,0 +1,34 @@
+======================================================================
+  GroundAtlas Desktop v2.3.1 — HƯỚNG DẪN CÀI ĐẶT & MỞ LẦN ĐẦU (macOS)
+======================================================================
+
+1. CÀI ĐẶT
+   Kéo biểu tượng "GroundAtlas Desktop.app" thả vào thư mục "Applications".
+
+2. MỞ LẦN ĐẦU (chỉ cần làm 1 lần duy nhất)
+   Vì phiên bản độc lập này chưa mua chứng chỉ Apple Notarization ($99/năm),
+   macOS Gatekeeper sẽ báo "không thể xác minh nhà phát triển" hoặc "bị hỏng"
+   ở lần mở đầu tiên. Điều này hoàn toàn bình thường với app độc lập.
+
+   Cách 1 (Khuyên dùng - 10 giây, hoạt động trên mọi macOS kể cả Sequoia 15+):
+     Mở ứng dụng Terminal (Cmd + Space -> gõ Terminal -> Enter), dán dòng sau rồi Enter:
+
+       xattr -cr "/Applications/GroundAtlas Desktop.app"
+
+     Sau đó mở "GroundAtlas Desktop" bình thường từ Launchpad hoặc Applications!
+
+   Cách 2 (Qua Cài đặt hệ thống - System Settings):
+     - Nhấp đúp mở GroundAtlas Desktop (sẽ hiện cảnh báo -> bấm Xong / Done).
+     - Mở System Settings (Cài đặt hệ thống) -> Privacy & Security (Quyền riêng tư & Bảo mật).
+     - Kéo xuống mục Security -> bấm "Open Anyway" (Vẫn mở) bên cạnh GroundAtlas Desktop.
+
+3. KÍCH HOẠT BẢN QUYỀN PRO (CHUNG KEY WINDOWS & MACOS)
+   - Key dạng GA2X-XXXX-XXXX-XXXX mua tại https://groundatlas-license-server.groundatlas.workers.dev
+     dùng được cho CẢ Windows và macOS.
+   - Chuyển máy (ví dụ Windows <-> Mac): vào Bản quyền Pro -> Gỡ kích hoạt máy này -> nhập key ở máy mới.
+
+4. HỖ TRỢ NHẬP FILE 3D (.SKP / .DAE / .OBJ / .GLB / .STL)
+   - Nếu máy Mac đã cài SketchUp 2021–2026 trong /Applications: kéo thả trực tiếp file .skp!
+   - Không cần SketchUp: hỗ trợ sẵn 100% file .dae (COLLADA), .obj, .glb, .gltf, .stl.
+
+Website & Tài liệu: https://github.com/hienkhang2004-coder/GroundAtlas

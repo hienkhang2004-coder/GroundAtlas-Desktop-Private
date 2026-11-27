@@ -1,0 +1,6 @@
+#include "dataaccess.h"
+#include <QCoreApplication>
+#include <QFile>
+#include <QJsonDocument>
+#include <QTimer>
+int main(int argc,char **argv){QCoreApplication app(argc,argv);DataAccess access;QJsonObject result;int done=0;const auto finish=[&]{if(++done<2)return;QFile file(app.arguments().value(1,"services.json"));if(file.open(QIODevice::WriteOnly))file.write(QJsonDocument(result).toJson());app.exit(result["search_ok"].toBool()&&result["load_ok"].toBool()?0:1);};QObject::connect(&access,&DataAccess::results,&app,[&](QJsonArray records){result["search_ok"]=!records.isEmpty();result["place_count"]=records.size();finish();});QObject::connect(&access,&DataAccess::loaded,&app,[&](ga::Project project){result["load_ok"]=!project.features.isEmpty();result["features"]=project.features.size();result["buildings"]=project.stats().buildings;result["source"]=project.source;QFile data(app.arguments().value(1,"services.json")+".gatlas");project.save(data.fileName());finish();});QObject::connect(&access,&DataAccess::failed,&app,[&](QString error){result["error"]=error;finish();});QTimer::singleShot(55000,&app,[&]{result["timeout"]=true;done=1;finish();});ga::Site site;site.lat=21.0301;site.lon=105.8515;site.radius=50;site.name="Native OSM service validation";access.search("Hoan Kiem",site.lat,site.lon,true);access.load(site);return app.exec();}

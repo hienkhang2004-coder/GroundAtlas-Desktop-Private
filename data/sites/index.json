@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "id": "hoankiem",
+      "vi": "Hoàn Kiếm, Hà Nội",
+      "en": "Hoan Kiem, Hanoi",
+      "file": "hoankiem.gatlas",
+      "center": [
+        21.0288,
+        105.8525
+      ],
+      "bbox": [
+        105.8425,
+        21.0188,
+        105.8625,
+        21.0388
+      ],
+      "source": "© Overture Maps Foundation; © OpenStreetMap contributors; Google Research Open Buildings; © ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium; weather climate.onebuilding.org",
+      "feature_parts": 37005,
+      "bytes": 36287257
+    },
+    {
+      "id": "benthanh-osm",
+      "vi": "Bến Thành, TP.HCM",
+      "en": "Ben Thanh, Ho Chi Minh City",
+      "file": "benthanh-osm.gatlas",
+      "center": [
+        10.7724,
+        106.698
+      ],
+      "bbox": [
+        106.69159901986492,
+        10.766111821775063,
+        106.70440098013506,
+        10.778688178224936
+      ],
+      "source": "© OpenStreetMap contributors · ODbL-1.0",
+      "feature_parts": 6359,
+      "bytes": 4416456
+    },
+    {
+      "id": "caurong-osm",
+      "vi": "Cầu Rồng, Đà Nẵng",
+      "en": "Dragon Bridge, Da Nang",
+      "file": "caurong-osm.gatlas",
+      "center": [
+        16.0611,
+        108.227
+      ],
+      "bbox": [
+        108.22045640709248,
+        16.05481182177506,
+        108.23354359290752,
+        16.067388178224938
+      ],
+      "source": "© OpenStreetMap contributors · ODbL-1.0",
+      "feature_parts": 2211,
+      "bytes": 1408617
+    }
+  ]
+}

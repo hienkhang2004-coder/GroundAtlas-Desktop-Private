@@ -1,0 +1,24 @@
+{
+  "provider": "OpenFreeMap",
+  "retrieved": "2026-10-27",
+  "style_url": "https://tiles.openfreemap.org/styles/positron",
+  "local_style_sha256": "40565c7a5a0961cb1b33afefb55c1e48f06575d2e45868b309582334eeab82f1",
+  "style_upstream": "https://github.com/hyperknot/openfreemap-styles",
+  "schema": "OpenMapTiles",
+  "data": "OpenStreetMap",
+  "attribution": "OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors",
+  "attribution_links": [
+    "https://openfreemap.org/",
+    "https://www.openmaptiles.org/",
+    "https://www.openstreetmap.org/copyright"
+  ],
+  "style_credits": "OpenMapTiles Positron GL Style, derived from CartoDB Basemaps designed by Stamen and Paul Norman for CartoDB Inc.; adapted by OpenFreeMap. GroundAtlas optionally changes presentation colors.",
+  "style_code_license": "BSD-3-Clause",
+  "style_design_license": "CC-BY-4.0; upstream CartoDB design CC-BY-3.0",
+  "license_notices": "licenses/maplibre/openfreemap-styles-LICENSE.md; licenses/maplibre/positron-gl-style-LICENSE.md",
+  "request_scope": "Current viewport resources only; no offline or bulk downloader",
+  "cache_max_bytes": 268435456,
+  "analysis_scope": "Presentation only. No basemap tiles/features are inserted into project source geometry, analysis or model exports.",
+  "renderer": "MapLibre Native for Qt 3.0.0",
+  "webview": false
+}
