@@ -211,16 +211,18 @@ export function renderLandingHtml(): string {
     background: #fafafa;
     box-shadow: var(--shadow-hover);
   }
-  .pkg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .pkg-title { font-weight: 600; font-size: 14px; color: var(--ink); }
+  .pkg-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .pkg-title { font-weight: 600; font-size: 13.5px; color: var(--ink); white-space: nowrap; }
   .pkg-check {
     display: none;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     background: var(--ink);
     color: #fff;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 999px;
+    white-space: nowrap;
+    flex: none;
   }
   .pkg.active .pkg-check { display: inline-flex; }
   .pkg-price {
@@ -464,7 +466,7 @@ async function loadPricing() {
     const el = document.createElement('div');
     el.className = 'pkg' + (p.seats === selectedSeats ? ' active' : '');
     const perSeat = Math.round(p.price_vnd / p.seats);
-    el.innerHTML = '<div class="pkg-head"><span class="pkg-title">' + p.label + '</span><span class="pkg-check">Đang chọn</span></div>'
+    el.innerHTML = '<div class="pkg-head"><span class="pkg-title">' + p.label + '</span><span class="pkg-check">✓ Chọn</span></div>'
       + '<div class="pkg-price">' + fmt(p.price_vnd) + '</div>'
       + (p.list_price_vnd > p.price_vnd ? '<div class="pkg-old">' + fmt(p.list_price_vnd) + '</div>' : '<div class="pkg-old" style="visibility:hidden">0</div>')
       + '<div class="pkg-note">~' + fmt(perSeat) + '/máy · Trọn đời 2.x</div>';
