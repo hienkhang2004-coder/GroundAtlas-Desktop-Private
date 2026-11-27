@@ -76,7 +76,7 @@ struct PlotDesign;
 struct MassingConfig;
 struct ImportedModel3D;
 struct FuturePlanningOverlay;
-Mesh buildMesh(const Project &project,const QVector<Layer> &layers,const Palette &palette,const Camera &camera,const QString &diagram="context",int selected=-1,bool includeSunDome=true,const TerrainGrid *dem=nullptr,const PlotDesign *plot=nullptr,const MassingConfig *massing=nullptr,const QVector<ImportedModel3D> *models3d=nullptr,const FuturePlanningOverlay *planning=nullptr);
+Mesh buildMesh(const Project &project,const QVector<Layer> &layers,const Palette &palette,const Camera &camera,const QString &diagram="context",int selected=-1,bool includeSunDome=true,const TerrainGrid *dem=nullptr,const PlotDesign *plot=nullptr,const MassingConfig *massing=nullptr,const QVector<ImportedModel3D> *models3d=nullptr,const FuturePlanningOverlay *planning=nullptr,bool transparentGround=false);
 Mesh buildSunDomeMesh(const Project &project,const SolarState &solar);
 double meshTopArea(const Feature &feature);
 }

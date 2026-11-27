@@ -18,13 +18,15 @@ public:
  void render(QSize size,double ratio,unsigned framebuffer);
  void setCamera(const ga::ContextCamera &camera);
  void setPresentation(QVector<ga::Layer> layers,ga::Palette palette,bool styleEnabled);
+ void setBasemapMode(const QString &mode);
+ QString basemapMode()const{return basemapMode_;}
  void setHanoiPlanning(bool enabled,const QString &layerId=QStringLiteral("qhpk"),double opacity=0.78);
  QJsonObject diagnostics()const;
  QPointF pixelForCoordinate(double lat,double lon)const;
 signals:
  void needsRendering();
 private:
- QString cacheDirectory_,renderer_,error_;
+ QString cacheDirectory_,renderer_,error_,basemapMode_=QStringLiteral("vector");
  QJsonObject originalStyle_;
  std::unique_ptr<QMapLibre::Map> map_;
  QOpenGLVertexArrayObject vao_;
@@ -37,6 +39,7 @@ private:
  QString hanoiPlanLayer_=QStringLiteral("qhpk"),appliedHanoiLayer_;
  double hanoiPlanOpacity_=0.78;
  unsigned glError_=0;
+ void loadStyleForMode();
  void applyStyle();
  void applyCamera();
  void syncHanoiPlanningLayer();

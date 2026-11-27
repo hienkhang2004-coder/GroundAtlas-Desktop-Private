@@ -161,7 +161,17 @@ void Viewport::resizeEvent(QResizeEvent *event){
  if(project_)emit framingChanged();
 }
 void Viewport::setContextStyleEnabled(bool value){contextStyled_=value;basemap_->setPresentation(layers_,palette_,value);update();}
-void Viewport::setContextVisible(bool value){if(contextVisible_==value)return;contextVisible_=value;interactionImage_.clear();contextViewDirty_=planDirty_=true;update();}
+void Viewport::setContextVisible(bool value){if(contextVisible_==value)return;contextVisible_=value;interactionImage_.clear();contextViewDirty_=planDirty_=dirty_=true;update();}
+void Viewport::setBasemapMode(const QString &mode){
+ const QString norm=(mode=="satellite")?QStringLiteral("satellite"):QStringLiteral("vector");
+ if(basemapMode_==norm)return;
+ basemapMode_=norm;
+ if(basemap_)basemap_->setBasemapMode(norm);
+ dirty_=true;
+ planDirty_=true;
+ update();
+ emit basemapModeChanged(basemapMode_);
+}
 void Viewport::setProject(const ga::Project *p){project_=p;planGeometry_={};interactionImage_.clear();stats_=p?p->stats():ga::Stats();selected_=-1;hoveredFeature_=-1;hanoiComposite_={};hanoiPlanTexDirty_=true;if(p){const double r=std::max(80.0,p->site.radius*0.86);sectionA_={-r,0};sectionB_={r,0};}reloadTerrainDem();dirty_=sunDirty_=planDirty_=planCacheDirty_=contextViewDirty_=true;update();}
 void Viewport::setLayers(const QVector<ga::Layer> &v){interactionImage_.clear();layers_=v;dirty_=planDirty_=planCacheDirty_=true;basemap_->setPresentation(layers_,palette_,contextStyled_);update();}
 void Viewport::setPalette(const ga::Palette &p){interactionImage_.clear();palette_=p;dirty_=planDirty_=planCacheDirty_=true;basemap_->setPresentation(layers_,palette_,contextStyled_);update();}
@@ -964,7 +974,8 @@ void Viewport::rebuild(){
  const ga::MassingConfig *activeMassing=(plot_.active&&massing_.enabled)?&massing_:nullptr;
  const QVector<ga::ImportedModel3D> *activeModels3d=models3d_.isEmpty()?nullptr:&models3d_;
  const ga::FuturePlanningOverlay *activePlanning=(planningOverlay_.valid()&&(planningOverlay_.show3DEnvelopes||planningOverlay_.show3DCorridors))?&planningOverlay_:nullptr;
- mesh_=ga::buildMesh(*project_,layers_,palette_,modelCamera,diagram_,selected_,false,dem,activePlot,activeMassing,activeModels3d,activePlanning);++meshBuilds_;
+ const bool transparentGround=(basemapMode_=="satellite"&&contextVisible_&&!camera_.exploded);
+ mesh_=ga::buildMesh(*project_,layers_,palette_,modelCamera,diagram_,selected_,false,dem,activePlot,activeMassing,activeModels3d,activePlanning,transparentGround);++meshBuilds_;
  stackHeight_=0;
  for(auto *vertices:{&mesh_.triangles,&mesh_.lines,&mesh_.transparent})
   for(auto &v:*vertices){
@@ -1071,8 +1082,8 @@ void Viewport::renderScene3DToTarget(GLuint targetFbo,int pixelW,int pixelH,cons
   glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT);
   glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDepthMask(GL_TRUE);glStencilMask(0xFF);glClearStencil(0);
   glDepthRange(0.0,1.0);glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);glPixelStorei(GL_UNPACK_ALIGNMENT,4);
-  // Harmonize light vector basemap softly in Dark Mode when Auto-Dark Basemap is enabled (pure OpenGL 3.3 Core Profile)
-  if(darkUi_&&autoDarkBasemap_&&palette_.paper.lightnessF()>=0.4&&tintShader_.isLinked()){
+  // Harmonize light vector basemap softly in Dark Mode when Auto-Dark Basemap is enabled (skip for Satellite imagery)
+  if(basemapMode_!="satellite"&&darkUi_&&autoDarkBasemap_&&palette_.paper.lightnessF()>=0.4&&tintShader_.isLinked()){
    glDisable(GL_DEPTH_TEST);glDepthMask(GL_FALSE);
    glEnable(GL_BLEND);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE);
    glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
@@ -2207,17 +2218,25 @@ void Viewport::drawOverlay(QPainter &p){
   p.drawText(QRectF(sbPill.left(),sbPill.top()+2,sbPill.width(),15),Qt::AlignCenter,scaleLbl);
   p.restore();
 
-  // Bottom-left compact site telemetry pill (clamped so it never touches the center dock)
+  // Bottom-left Google-Maps-style Satellite / Vector Map square thumbnail switcher
+  const bool showCornerThumb=(!drawingPlot_&&width()>=480&&height()>=260);
+  const QRectF thumbR=basemapThumbRect();
+  if(showCornerThumb){
+   ga::drawBasemapCornerSwitcher(p,thumbR,basemapMode_=="satellite",basemapThumbHovered_,darkUi_,english_);
+  }
+
+  // Bottom-left compact site telemetry pill (shifted right of corner switcher, clamped so it never touches center dock)
   const QString footFull=locale.toString(s.buildings)+tr(" công trình · "," buildings · ")+locale.toString(s.knownHeights)+tr(" có chiều cao"," with heights");
   const QString footShort=locale.toString(s.buildings)+tr(" công trình"," buildings");
   p.save();
   p.setFont(QFont("Segoe UI",7.5,QFont::Medium));
-  const double maxFootW=hudDockVisible_&&width()>=540?std::max(104.0,dockPillRect().left()-26.0):double(width()-200);
+  const double footLeft=showCornerThumb?(thumbR.right()+10.0):16.0;
+  const double maxFootW=hudDockVisible_&&width()>=540?std::max(0.0,dockPillRect().left()-footLeft-10.0):double(width()-footLeft-180.0);
   const double fullNeed=double(p.fontMetrics().horizontalAdvance(footFull)+20);
   const QString &foot=(fullNeed<=maxFootW)?footFull:footShort;
   const double fw=std::min(maxFootW,double(p.fontMetrics().horizontalAdvance(foot)+20));
   if(fw>=96.0){
-   const QRectF footPill(16.0,height()-42.0,fw,24.0);
+   const QRectF footPill(footLeft,height()-42.0,fw,24.0);
    p.setPen(QPen(glassBorder,1.0));p.setBrush(glassFill);p.drawRoundedRect(footPill,10,10);
    p.setPen(muted);p.drawText(footPill.adjusted(9,0,-9,0),Qt::AlignLeft|Qt::AlignVCenter,p.fontMetrics().elidedText(foot,Qt::ElideRight,int(fw-18)));
   }
@@ -2227,6 +2246,10 @@ void Viewport::drawOverlay(QPainter &p){
 
 QRectF Viewport::compassRect() const {
  return QRectF(width()-54.0,14.0,40.0,40.0);
+}
+
+QRectF Viewport::basemapThumbRect() const {
+ return QRectF(16.0,height()-90.0,74.0,74.0);
 }
 
 QRectF Viewport::dockPillRect() const {
@@ -2327,10 +2350,15 @@ void Viewport::mousePressEvent(QMouseEvent *e){
   e->accept();
   return;
  }
- // Clickable North Compass & Floating Glass Dock hit-test
+ // Clickable North Compass, Google-Maps Corner Satellite Switcher & Floating Glass Dock hit-test
  if(e->button()==Qt::LeftButton&&!drawingPlot_){
   if(compassRect().contains(e->position())){
    triggerDockAction("north");
+   e->accept();
+   return;
+  }
+  if(project_&&width()>=480&&height()>=260&&basemapThumbRect().contains(e->position())){
+   setBasemapMode(basemapMode_=="satellite"?QStringLiteral("vector"):QStringLiteral("satellite"));
    e->accept();
    return;
   }
@@ -2578,16 +2606,18 @@ void Viewport::mouseMoveEvent(QMouseEvent *e){
  }
  // Interactive HUD hover, Plot vertex handle hover & live building inspector
  const bool prevComp=compassHovered_;
+ const bool prevThumb=basemapThumbHovered_;
  const QString prevDock=hoveredDockId_;
  const int prevHover=hoveredFeature_;
  const int prevPv=hoveredPlotVertex_;
  compassHovered_=compassRect().contains(e->position());
+ basemapThumbHovered_=(!compassHovered_&&project_&&!drawingPlot_&&width()>=480&&height()>=260&&basemapThumbRect().contains(e->position()));
  hoveredDockId_.clear();
  hoveredPlotVertex_=-1;
- if(!compassHovered_&&hudDockVisible_&&project_&&width()>=540&&dockPillRect().contains(e->position())){
+ if(!compassHovered_&&!basemapThumbHovered_&&hudDockVisible_&&project_&&width()>=540&&dockPillRect().contains(e->position())){
   for(const auto &it:dockItems())if(it.rect.contains(e->position())){hoveredDockId_=it.id;break;}
  }
- const bool overHud=compassHovered_||!hoveredDockId_.isEmpty()||(hudDockVisible_&&project_&&width()>=540&&dockPillRect().contains(e->position()));
+ const bool overHud=compassHovered_||basemapThumbHovered_||!hoveredDockId_.isEmpty()||(hudDockVisible_&&project_&&width()>=540&&dockPillRect().contains(e->position()));
  if(overHud){
   hoveredFeature_=-1;
   setCursor(Qt::PointingHandCursor);
@@ -2642,12 +2672,12 @@ void Viewport::mouseMoveEvent(QMouseEvent *e){
    }
   }
  }
- if(prevComp!=compassHovered_||prevDock!=hoveredDockId_||prevHover!=hoveredFeature_||prevPv!=hoveredPlotVertex_||hoveredFeature_>=0)update();
+ if(prevComp!=compassHovered_||prevThumb!=basemapThumbHovered_||prevDock!=hoveredDockId_||prevHover!=hoveredFeature_||prevPv!=hoveredPlotVertex_||hoveredFeature_>=0)update();
  e->accept();
 }
 void Viewport::leaveEvent(QEvent *e){
- if(compassHovered_||!hoveredDockId_.isEmpty()||hoveredFeature_>=0||hoveredPlotVertex_>=0){
-  compassHovered_=false;hoveredDockId_.clear();hoveredFeature_=-1;hoveredPlotVertex_=-1;
+ if(compassHovered_||basemapThumbHovered_||!hoveredDockId_.isEmpty()||hoveredFeature_>=0||hoveredPlotVertex_>=0){
+  compassHovered_=false;basemapThumbHovered_=false;hoveredDockId_.clear();hoveredFeature_=-1;hoveredPlotVertex_=-1;
   if(!drawingPlot_&&!dragging_&&!measuring_)unsetCursor();
   update();
  }

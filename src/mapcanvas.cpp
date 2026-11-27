@@ -28,27 +28,6 @@
 #include <cmath>
 
 namespace {
-QString satelliteStyleJson() {
- const QJsonObject style{
-  {"version", 8},
-  {"name", "Esri World Imagery"},
-  {"sources", QJsonObject{
-   {"esri-imagery", QJsonObject{
-    {"type", "raster"},
-    {"tiles", QJsonArray{"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"}},
-    {"tileSize", 256},
-    {"maxzoom", 19},
-    {"attribution", "Esri, Maxar, Earthstar Geographics"}
-   }}
-  }},
-  {"layers", QJsonArray{
-   QJsonObject{{"id", "bg"}, {"type", "background"}, {"paint", QJsonObject{{"background-color", "#14181e"}}}},
-   QJsonObject{{"id", "satellite"}, {"type", "raster"}, {"source", "esri-imagery"}, {"minzoom", 0}, {"maxzoom", 22}}
-  }}
- };
- return QString::fromUtf8(QJsonDocument(style).toJson(QJsonDocument::Compact));
-}
-
 QString formatAreaLabel(double areaM2, bool english) {
  const QLocale loc(english ? "en_US" : "vi_VN");
  if (areaM2 >= 1000000.0) return loc.toString(areaM2 / 1000000.0, 'f', 2) + " km²";
@@ -99,7 +78,7 @@ void MapCanvas::loadStyleForMode(){
  if(!vector_)return;
  styleReady_=false;fullyRendered_=false;appliedHanoiLayer_.clear();mapError_.clear();hudDirty_=true;
  if(basemapMode_=="satellite"){
-  vector_->setStyleJson(satelliteStyleJson());
+  vector_->setStyleJson(ga::satelliteBasemapStyleJson());
  }else{
   if(originalStyle_.isEmpty())vector_->setStyleUrl("https://tiles.openfreemap.org/styles/positron");
   else vector_->setStyleJson(QString::fromUtf8(QJsonDocument(originalStyle_).toJson(QJsonDocument::Compact)));
@@ -489,15 +468,24 @@ void MapCanvas::drawHud(QPainter &ui){
   }
  }
 
- // 4. Subtle bottom-left hint & bottom-right attribution pill (stays below y = height()-22)
+ // 4. Google-Maps-style Bottom-Left Satellite / Map Square Thumbnail Switcher (74x74)
+ const bool showCornerThumb=(width()>=460&&height()>=240);
+ const QRectF thumbRect(16.0,height()-90.0,74.0,74.0);
+ if(showCornerThumb){
+  ga::drawBasemapCornerSwitcher(ui,thumbRect,basemapMode_=="satellite",hoverHudId_=="toggle-basemap-corner",darkUi_,english_);
+  hudButtons_.append({"toggle-basemap-corner",basemapMode_=="satellite"?"Map":"Satellite",{},thumbRect,basemapMode_=="satellite",false,0,0});
+ }
+
+ // 5. Subtle bottom-left hint (shifted right of corner switcher) & bottom-right attribution pill
  ui.setFont(QFont("Segoe UI",7.5));
- if(width()>=920){
+ if(width()>=1040){
   const QString hint=drawing_
    ?(english_?"Click: add vertex · Shift+drag: freehand · Enter: finish · Esc: cancel":"Bấm: thêm đỉnh · Shift+kéo: vẽ tự do · Enter: khép · Esc: hủy")
    :(english_?"Scroll zoom · Drag pan · Click map to pick site":"Cuộn thu phóng · Kéo di chuyển · Bấm chọn khu đất");
   const int hw=ui.fontMetrics().horizontalAdvance(hint)+18;
-  const QRectF hr(14.0,height()-28.0,hw,20.0);
-  if(hr.right()<width()*0.5-240.0){
+  const double hx=showCornerThumb?(thumbRect.right()+10.0):14.0;
+  const QRectF hr(hx,height()-28.0,hw,20.0);
+  if(hr.right()<width()*0.5-275.0){
    ui.setPen(Qt::NoPen);ui.setBrush(glassBg);ui.drawRoundedRect(hr,10.0,10.0);
    ui.setPen(textMuted);ui.drawText(hr,Qt::AlignCenter,hint);
   }
@@ -541,6 +529,7 @@ bool MapCanvas::handleHudClick(const QString &id){
  if(id=="recenter"){centerOn(candidate_.lat,candidate_.lon,std::max(15.2,zoom_));return true;}
  if(id=="mode-vector"){setBasemapMode("vector");return true;}
  if(id=="mode-sat"){setBasemapMode("satellite");return true;}
+ if(id=="toggle-basemap-corner"){setBasemapMode(basemapMode_=="satellite"?"vector":"satellite");return true;}
  if(id=="toggle-hanoi-qh"){
   const bool nextOn=!hanoiPlanEnabled_;
   QString nextLayer=hanoiPlanLayer_;

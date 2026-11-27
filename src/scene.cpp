@@ -224,7 +224,7 @@ Mesh buildSunDomeMesh(const Project &project,const SolarState &solar){
  return mesh;
 }
 
-Mesh buildMesh(const Project &project,const QVector<Layer> &layers,const Palette &p,const Camera &camera,const QString &diagram,int selected,bool includeSunDome,const TerrainGrid *dem,const PlotDesign *plot,const MassingConfig *massing,const QVector<ImportedModel3D> *models3d,const FuturePlanningOverlay *planning){
+Mesh buildMesh(const Project &project,const QVector<Layer> &layers,const Palette &p,const Camera &camera,const QString &diagram,int selected,bool includeSunDome,const TerrainGrid *dem,const PlotDesign *plot,const MassingConfig *massing,const QVector<ImportedModel3D> *models3d,const FuturePlanningOverlay *planning,bool transparentGround){
  Mesh mesh;QVector<QVector<Paint>> classified;classified.reserve(project.features.size());QSet<int> activeOrders;FeaturePaintCache classifier(layers,diagram);for(const auto &feature:project.features){auto paints=classifier.paints(feature);for(const auto &paint:paints)activeOrders.insert(paint.order);classified.append(std::move(paints));}
  QHash<int,double> elevations;int visibleIndex=0;for(int i=0;i<layers.size();++i)if(activeOrders.contains(i))elevations[i]=camera.exploded?visibleIndex++*camera.separation:0;
  const bool useDem=(dem&&dem->valid&&!camera.exploded&&camera.mode!="2d");
@@ -262,7 +262,7 @@ Mesh buildMesh(const Project &project,const QVector<Layer> &layers,const Palette
     tri(mesh.triangles,p00,z00,p11,z11,p01,z01,p.paper,normalOf(p00,z00,p11,z11,p01,z01));
    }
   }
- }else{
+ }else if(!transparentGround){
   Feature base;base.rings={project.site.boundary};polygon(mesh.triangles,base,-.1,p.paper);
  }
  for(int index=0;index<project.features.size();++index){const auto &f=project.features[index];const auto &paints=classified[index];if(paints.isEmpty())continue;

@@ -907,6 +907,14 @@ private slots:
   QTest::qWait(1400);
   QVERIFY(captureWindow(shotDir + "/native-v232-halong-3d-qh.png"));
 
+  // Switch 3D Viewport to Satellite mode (like clicking the Google-Maps bottom-left corner card!) and verify sync + capture!
+  win.viewport()->setBasemapMode(QStringLiteral("satellite"));
+  QCOMPARE(mc->basemapMode(), QStringLiteral("satellite"));
+  QCOMPARE(win.viewport()->basemapMode(), QStringLiteral("satellite"));
+  QTest::qWait(2200);
+  QVERIFY(captureWindow(shotDir + "/native-v232-halong-3d-satellite-qh.png"));
+  win.viewport()->setBasemapMode(QStringLiteral("vector"));
+
   win.setHanoiPlanning(false);
   win.hide();
  }

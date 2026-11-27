@@ -87,6 +87,8 @@ public:
  void setContextStyleEnabled(bool enabled);
  void setContextVisible(bool enabled);
  bool contextVisible()const{return contextVisible_;}
+ void setBasemapMode(const QString &mode);
+ QString basemapMode()const{return basemapMode_;}
  QJsonObject basemapDiagnostics()const;
  void shutdown();
  void finishInteraction(){interactionIdle_.stop();interacting_=false;planDirty_=true;update();}
@@ -120,6 +122,7 @@ signals:
  void model3dMoved(int index,double x,double y);
  void placingModel3dChanged(bool active);
  void hanoiPlanningToggled(bool enabled);
+ void basemapModeChanged(QString mode);
 protected:
  void initializeGL() override;
  void resizeGL(int,int)override;
@@ -189,7 +192,8 @@ private:
  QImage planImage_;
  QString diagram_="context",renderer_,graphicsError_;
  bool dirty_=true,uploadDirty_=true,sunDirty_=true,sunUploadDirty_=true,shadowNeedsResize_=false,planDirty_=true,planCacheDirty_=true,english_=false,dragging_=false;
- bool darkUi_=false,hudDockVisible_=true,compassHovered_=false;
+ bool darkUi_=false,hudDockVisible_=true,compassHovered_=false,basemapThumbHovered_=false;
+ QString basemapMode_=QStringLiteral("vector");
  int selected_=-1,hoveredFeature_=-1,triangleVertices_=0,lineVertices_=0,transparentVertices_=0;
  int sunTriVerts_=0,sunLineVerts_=0,sunTransVerts_=0;
  QPointF lastMouse_,pressMouse_,hoverScreen_;
@@ -248,6 +252,7 @@ private:
  void stopCameraAnimation();
  struct DockItem{QString id;QRectF rect;QString label;QString tip;bool active=false;bool accent=false;};
  QRectF compassRect() const;
+ QRectF basemapThumbRect() const;
  QRectF dockPillRect() const;
  QVector<DockItem> dockItems() const;
  int hitTestBuilding(const QPointF &local) const;

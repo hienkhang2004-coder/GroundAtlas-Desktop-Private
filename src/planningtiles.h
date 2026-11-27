@@ -9,6 +9,8 @@
 #include <QVector>
 
 class QNetworkReply;
+class QPainter;
+class QRectF;
 
 namespace ga {
 
@@ -55,6 +57,8 @@ void setCustomPlanningTileTemplate(const QString &urlTemplate);
 QString customPlanningTileTemplate();
 bool isLikelyInHanoiArea(double lat, double lon);
 bool isLikelyInHaLongArea(double lat, double lon);
+QString satelliteBasemapStyleJson();
+void drawBasemapCornerSwitcher(QPainter &p, const QRectF &card, bool isSatelliteActive, bool hovered, bool darkUi, bool english);
 
 class HanoiPlanningTileFetcher : public QObject {
  Q_OBJECT

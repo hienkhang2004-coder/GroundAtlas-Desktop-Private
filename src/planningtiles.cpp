@@ -5,9 +5,14 @@
 #include <QDir>
 #include <QFile>
 #include <QHostAddress>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QLinearGradient>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPointer>
 #include <QRegularExpression>
 #include <QSaveFile>
@@ -254,6 +259,203 @@ bool isLikelyInHanoiArea(double lat, double lon) {
 
 bool isLikelyInHaLongArea(double lat, double lon) {
  return lat >= 20.89 && lat <= 21.02 && lon >= 106.98 && lon <= 107.14;
+}
+
+QString satelliteBasemapStyleJson() {
+ const QJsonObject style{
+  {"version", 8},
+  {"name", "Esri World Imagery"},
+  {"sources", QJsonObject{
+   {"esri-imagery", QJsonObject{
+    {"type", "raster"},
+    {"tiles", QJsonArray{"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"}},
+    {"tileSize", 256},
+    {"maxzoom", 19},
+    {"attribution", "Esri, Maxar, Earthstar Geographics"}
+   }}
+  }},
+  {"layers", QJsonArray{
+   QJsonObject{{"id", "bg"}, {"type", "background"}, {"paint", QJsonObject{{"background-color", "#14181e"}}}},
+   QJsonObject{{"id", "satellite"}, {"type", "raster"}, {"source", "esri-imagery"}, {"minzoom", 0}, {"maxzoom", 22}, {"paint", QJsonObject{{"raster-fade-duration", 0}}}}
+  }}
+ };
+ return QString::fromUtf8(QJsonDocument(style).toJson(QJsonDocument::Compact));
+}
+
+void drawBasemapCornerSwitcher(QPainter &p, const QRectF &card, bool isSatelliteActive, bool hovered, bool darkUi, bool english) {
+ p.save();
+ p.setRenderHint(QPainter::Antialiasing, true);
+ p.setRenderHint(QPainter::TextAntialiasing, true);
+
+ const double r = 12.0;
+ // Layered Google-Maps-style elevation shadow
+ p.setPen(Qt::NoPen);
+ p.setBrush(QColor(0, 0, 0, hovered ? 86 : 62));
+ p.drawRoundedRect(card.translated(0.0, hovered ? 3.5 : 2.5), r + 0.5, r + 0.5);
+ p.setBrush(QColor(0, 0, 0, 32));
+ p.drawRoundedRect(card.adjusted(-1.0, 0.0, 1.0, 2.0), r + 1.0, r + 1.0);
+
+ // Clip miniature map preview inside rounded square
+ QPainterPath clip;
+ clip.addRoundedRect(card, r, r);
+ p.save();
+ p.setClipPath(clip);
+
+ const double x = card.left(), y = card.top(), w = card.width(), h = card.height();
+ const bool showSatelliteThumb = !isSatelliteActive;
+
+ if (showSatelliteThumb) {
+  // Aerial coastal satellite thumbnail preview (click to switch to Satellite)
+  QLinearGradient landGrad(x, y, x + w, y + h);
+  landGrad.setColorAt(0.0, QColor("#2a4a35"));
+  landGrad.setColorAt(0.55, QColor("#365441"));
+  landGrad.setColorAt(1.0, QColor("#233a2f"));
+  p.fillRect(card, landGrad);
+
+  // Coastal bay water wedge on bottom-right
+  QPainterPath bay;
+  bay.moveTo(x + w * 0.42, y + h);
+  bay.cubicTo(x + w * 0.58, y + h * 0.62, x + w * 0.78, y + h * 0.42, x + w, y + h * 0.24);
+  bay.lineTo(x + w, y + h);
+  bay.closeSubpath();
+  QLinearGradient seaGrad(x + w * 0.45, y + h * 0.3, x + w, y + h);
+  seaGrad.setColorAt(0.0, QColor("#1f5e6e"));
+  seaGrad.setColorAt(1.0, QColor("#133a47"));
+  p.fillPath(bay, seaGrad);
+
+  // Subtle sandy shoreline & quay edge
+  QPainterPath coast;
+  coast.moveTo(x + w * 0.41, y + h);
+  coast.cubicTo(x + w * 0.57, y + h * 0.61, x + w * 0.77, y + h * 0.41, x + w, y + h * 0.23);
+  p.setPen(QPen(QColor(186, 196, 184, 155), 2.2));
+  p.setBrush(Qt::NoBrush);
+  p.drawPath(coast);
+
+  // Miniature pier extending into bay
+  p.setPen(QPen(QColor(215, 210, 198, 210), 2.0, Qt::SolidLine, Qt::RoundCap));
+  p.drawLine(QPointF(x + w * 0.66, y + h * 0.52), QPointF(x + w * 0.90, y + h * 0.66));
+
+  // Aerial tree canopy pockets on top-left
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(30, 62, 38, 195));
+  p.drawEllipse(QPointF(x + w * 0.20, y + h * 0.26), 11.0, 9.0);
+  p.setBrush(QColor(54, 92, 58, 175));
+  p.drawEllipse(QPointF(x + w * 0.14, y + h * 0.46), 9.0, 8.0);
+  p.drawEllipse(QPointF(x + w * 0.34, y + h * 0.18), 8.0, 6.5);
+
+  // Miniature aerial urban blocks & rooftops
+  const QVector<QRectF> roofs = {
+   {x + w * 0.38, y + h * 0.28, 9.5, 6.0},
+   {x + w * 0.50, y + h * 0.24, 11.0, 6.5},
+   {x + w * 0.44, y + h * 0.39, 10.5, 6.5},
+   {x + w * 0.28, y + h * 0.52, 8.5, 7.0},
+   {x + w * 0.56, y + h * 0.36, 9.0, 5.5},
+  };
+  const QColor roofCols[] = {QColor("#b8b3a8"), QColor("#8f9599"), QColor("#c8beae"), QColor("#737a80"), QColor("#a59e93")};
+  for (int i = 0; i < roofs.size(); ++i) {
+   p.setBrush(roofCols[i % 5]);
+   p.drawRoundedRect(roofs[i], 1.2, 1.2);
+  }
+
+  // Crisp aerial highway spine
+  p.setPen(QPen(QColor(210, 212, 206, 170), 2.0));
+  p.drawLine(QPointF(x + w * 0.34, y), QPointF(x + w * 0.32, y + h));
+  p.drawLine(QPointF(x, y + h * 0.38), QPointF(x + w * 0.72, y + h * 0.28));
+ } else {
+  // Clean architectural Vector Map thumbnail preview (click to return to Map)
+  p.fillRect(card, QColor("#f4f3ef"));
+
+  // Pale coastal water on bottom-right
+  QPainterPath bay;
+  bay.moveTo(x + w * 0.45, y + h);
+  bay.cubicTo(x + w * 0.60, y + h * 0.64, x + w * 0.78, y + h * 0.44, x + w, y + h * 0.26);
+  bay.lineTo(x + w, y + h);
+  bay.closeSubpath();
+  p.fillPath(bay, QColor("#cfe1ee"));
+
+  // Soft sage park area
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor("#d9e8d4"));
+  p.drawRoundedRect(QRectF(x + 4.0, y + 5.0, w * 0.36, h * 0.48), 6.0, 6.0);
+
+  // Subtle architectural footprint blocks
+  p.setBrush(QColor("#e1e0da"));
+  p.drawRoundedRect(QRectF(x + w * 0.46, y + h * 0.14, 13.0, 8.0), 1.5, 1.5);
+  p.drawRoundedRect(QRectF(x + w * 0.46, y + h * 0.28, 11.0, 9.0), 1.5, 1.5);
+  p.drawRoundedRect(QRectF(x + w * 0.22, y + h * 0.56, 13.0, 9.0), 1.5, 1.5);
+
+  // Vector arterial road casings & white fills
+  auto drawRoad = [&](const QPointF &a, const QPointF &b, double rw) {
+   p.setPen(QPen(QColor("#cfcec7"), rw + 1.6, Qt::SolidLine, Qt::RoundCap));
+   p.drawLine(a, b);
+   p.setPen(QPen(QColor("#ffffff"), rw, Qt::SolidLine, Qt::RoundCap));
+   p.drawLine(a, b);
+  };
+  drawRoad(QPointF(x + w * 0.39, y - 2.0), QPointF(x + w * 0.37, y + h + 2.0), 3.2);
+  drawRoad(QPointF(x - 2.0, y + h * 0.42), QPointF(x + w * 0.74, y + h * 0.30), 2.6);
+  drawRoad(QPointF(x + w * 0.38, y + h * 0.36), QPointF(x + w * 0.66, y + h * 0.52), 2.0);
+ }
+
+ // Bottom dark readability scrim (classic Google Maps Layers footer)
+ QLinearGradient scrim(x, y + h - 30.0, x, y + h);
+ scrim.setColorAt(0.0, QColor(12, 14, 18, 0));
+ scrim.setColorAt(0.45, QColor(12, 14, 18, 155));
+ scrim.setColorAt(1.0, QColor(12, 14, 18, 224));
+ p.fillRect(QRectF(x, y + h - 30.0, w, 30.0), scrim);
+
+ // Tiny crisp stacked-layers diamond glyph + label
+ const QString lbl = showSatelliteThumb
+  ? (english ? QStringLiteral("Satellite") : QStringLiteral("Vệ tinh"))
+  : (english ? QStringLiteral("Map") : QStringLiteral("Bản đồ"));
+ QFont lf(QStringLiteral("Segoe UI"), 8.0, QFont::DemiBold);
+ p.setFont(lf);
+ const int tw = p.fontMetrics().horizontalAdvance(lbl);
+ const double iconW = 11.0, gap = 4.0;
+ const double contentW = iconW + gap + tw;
+ const double startX = x + (w - contentW) * 0.5;
+ const double baseY = y + h - 11.0;
+
+ // 3-layer isometric icon
+ p.setPen(QPen(QColor(255, 255, 255, 238), 1.25, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+ p.setBrush(Qt::NoBrush);
+ const double ix = startX + 5.5, iy = baseY - 1.5;
+ QPolygonF topDia{{ix, iy - 4.0}, {ix + 4.8, iy - 1.5}, {ix, iy + 1.0}, {ix - 4.8, iy - 1.5}};
+ p.drawPolygon(topDia);
+ p.drawPolyline(QPolygonF{{ix - 4.6, iy + 1.2}, {ix, iy + 3.6}, {ix + 4.6, iy + 1.2}});
+ p.drawPolyline(QPolygonF{{ix - 4.6, iy + 3.4}, {ix, iy + 5.8}, {ix + 4.6, iy + 3.4}});
+
+ p.setPen(QColor("#ffffff"));
+ p.drawText(QRectF(startX + iconW + gap, y + h - 22.0, tw + 4.0, 20.0), Qt::AlignLeft | Qt::AlignVCenter, lbl);
+
+ p.restore(); // end clip
+
+ // Crisp Google-Maps 2px white frame (brightens on hover)
+ p.setBrush(Qt::NoBrush);
+ if (hovered) {
+  p.setPen(QPen(darkUi || isSatelliteActive ? QColor(255, 255, 255, 110) : QColor(19, 19, 19, 58), 4.0));
+  p.drawRoundedRect(card.adjusted(-1.0, -1.0, 1.0, 1.0), r + 1.0, r + 1.0);
+ }
+ p.setPen(QPen(QColor("#ffffff"), 2.2));
+ p.drawRoundedRect(card.adjusted(0.6, 0.6, -0.6, -0.6), r - 0.5, r - 0.5);
+ p.setPen(QPen(QColor(0, 0, 0, darkUi ? 90 : 48), 0.8));
+ p.drawRoundedRect(card, r, r);
+
+ // Floating Spectrum micro-tooltip on hover
+ if (hovered) {
+  const QString tip = showSatelliteThumb
+   ? (english ? QStringLiteral("Switch to Satellite imagery") : QStringLiteral("Chuyển sang nền Ảnh vệ tinh"))
+   : (english ? QStringLiteral("Switch to Vector map") : QStringLiteral("Chuyển về nền Bản đồ Vector"));
+  p.setFont(QFont(QStringLiteral("Segoe UI"), 7.6, QFont::DemiBold));
+  const int tipW = p.fontMetrics().horizontalAdvance(tip) + 16;
+  const QRectF tipRect(x, y - 28.0, tipW, 22.0);
+  p.setPen(Qt::NoPen);
+  p.setBrush(QColor(24, 24, 24, 240));
+  p.drawRoundedRect(tipRect, 6.0, 6.0);
+  p.setPen(QColor("#ffffff"));
+  p.drawText(tipRect, Qt::AlignCenter, tip);
+ }
+
+ p.restore();
 }
 
 struct HanoiPlanningTileFetcher::Job {

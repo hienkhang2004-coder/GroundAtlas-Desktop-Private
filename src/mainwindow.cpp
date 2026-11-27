@@ -2635,10 +2635,24 @@ void MainWindow::buildUi() {
   loadButton_->click();
  });
  connect(map_, &MapCanvas::basemapModeChanged, this, [this](const QString &mode) {
+  if (viewport_ && viewport_->basemapMode() != mode) {
+   const QSignalBlocker b(viewport_);
+   viewport_->setBasemapMode(mode);
+  }
   showToast(mode == "satellite"
    ? trText("Đã chuyển nền Ảnh vệ tinh toàn cầu (Esri)", "Switched to Global Satellite Imagery (Esri)")
    : trText("Đã chuyển nền Bản đồ Vector (OpenFreeMap)", "Switched to Global Vector Basemap (OpenFreeMap)"),
-   QColor("#0284c7"), 2000);
+   QColor("#131313"), 2000);
+ });
+ connect(viewport_, &Viewport::basemapModeChanged, this, [this](const QString &mode) {
+  if (map_ && map_->basemapMode() != mode) {
+   const QSignalBlocker b(map_);
+   map_->setBasemapMode(mode);
+  }
+  showToast(mode == "satellite"
+   ? trText("Đã chuyển nền Ảnh vệ tinh toàn cầu (Esri)", "Switched to Global Satellite Imagery (Esri)")
+   : trText("Đã chuyển nền Bản đồ Vector (OpenFreeMap)", "Switched to Global Vector Basemap (OpenFreeMap)"),
+   QColor("#131313"), 2000);
  });
  connect(map_, &MapCanvas::sitePicked, this, [this](double lat, double lon) {
   if (!siteSelection_->locked()) chooseSite(lat, lon);
