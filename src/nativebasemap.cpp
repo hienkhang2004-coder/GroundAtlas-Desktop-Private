@@ -36,7 +36,7 @@ void NativeBasemap::setCamera(const ga::ContextCamera &camera){camera_=camera;ap
 void NativeBasemap::applyCamera(){if(!map_)return;ready_=false;error_.clear();loading_.start();if(!map_->setCustomProjection(camera_.projection))error_="invalid-projection";map_->setCoordinateZoom({camera_.lat,camera_.lon},camera_.zoom);map_->setBearing(camera_.bearing);map_->setPitch(camera_.pitch);}
 void NativeBasemap::setPresentation(QVector<ga::Layer> layers,ga::Palette palette,bool enabled){layers_=std::move(layers);palette_=std::move(palette);styled_=enabled;applyStyle();}
 void NativeBasemap::setHanoiPlanning(bool enabled,const QString &layerId,double opacity){
- const QString norm=(layerId=="khsdd"||layerId=="qhct"||layerId=="custom")?layerId:QStringLiteral("qhpk");
+ const QString norm=ga::normalizePlanningLayerId(layerId);
  const double op=std::clamp(opacity,0.05,1.0);
  if(hanoiPlanEnabled_==enabled&&hanoiPlanLayer_==norm&&std::abs(hanoiPlanOpacity_-op)<1e-3&&norm!="custom")return;
  hanoiPlanEnabled_=enabled;hanoiPlanLayer_=norm;hanoiPlanOpacity_=op;
@@ -56,14 +56,20 @@ void NativeBasemap::syncHanoiPlanningLayer(){
  if(appliedHanoiLayer_!=hanoiPlanLayer_||!map_->sourceExists(srcId)||!map_->layerExists(lyrId)){
   if(map_->layerExists(lyrId))map_->removeLayer(lyrId);
   if(map_->sourceExists(srcId))map_->removeSource(srcId);
-  map_->addSource(srcId,QVariantMap{
+  const auto info=ga::hanoiPlanningLayerInfo(hanoiPlanLayer_);
+  QVariantMap src{
    {"type","raster"},
    {"tiles",QStringList{ga::hanoiPlanningTileTemplate(hanoiPlanLayer_)}},
    {"tileSize",256},
-   {"minzoom",10},
-   {"maxzoom",17}
-  });
+   {"minzoom",info.minZoom},
+   {"maxzoom",info.maxZoom}
+  };
+  if(info.hasBounds){
+   src.insert(QStringLiteral("bounds"),QVariantList{info.west,info.south,info.east,info.north});
+  }
+  map_->addSource(srcId,src);
   map_->addLayer(lyrId,QVariantMap{{"type","raster"},{"source",srcId}});
+  map_->setPaintProperty(lyrId,QStringLiteral("raster-fade-duration"),0);
   appliedHanoiLayer_=hanoiPlanLayer_;
  }
  map_->setPaintProperty(lyrId,QStringLiteral("raster-opacity"),hanoiPlanOpacity_);

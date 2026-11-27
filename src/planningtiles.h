@@ -19,6 +19,14 @@ struct HanoiTileLayerInfo {
  QString urlTemplate;
  int minZoom = 10;
  int maxZoom = 17;
+ bool hasBounds = false;
+ double west = -180.0;
+ double south = -85.0;
+ double east = 180.0;
+ double north = 85.0;
+ double focusLat = 0.0;
+ double focusLon = 0.0;
+ QString localTilesDir;
 };
 
 struct HanoiTileComposite {
@@ -39,10 +47,14 @@ struct HanoiTileComposite {
 };
 
 QVector<HanoiTileLayerInfo> hanoiPlanningLayers();
+HanoiTileLayerInfo hanoiPlanningLayerInfo(const QString &layerId);
+QString normalizePlanningLayerId(const QString &layerId);
+bool isSupportedPlanningLayer(const QString &layerId);
 QString hanoiPlanningTileTemplate(const QString &layerId);
 void setCustomPlanningTileTemplate(const QString &urlTemplate);
 QString customPlanningTileTemplate();
 bool isLikelyInHanoiArea(double lat, double lon);
+bool isLikelyInHaLongArea(double lat, double lon);
 
 class HanoiPlanningTileFetcher : public QObject {
  Q_OBJECT

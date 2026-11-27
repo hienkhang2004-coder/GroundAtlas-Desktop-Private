@@ -16,10 +16,11 @@ public:
  MapCanvas(const QString &cacheDirectory,QWidget *parent=nullptr);
  ~MapCanvas() override;
  void shutdown();
- void finishInteraction(){interactionIdle_.stop();interacting_=false;overlayDirty_=true;update();}
+ void finishInteraction(){interactionIdle_.stop();interacting_=false;overlayDirty_=true;hudDirty_=true;update();if(deferredNavSync_){deferredNavSync_=false;emit navigationChanged();emit viewChanged();}}
+ bool isInteracting()const{return interacting_;}
  void setContextEnabled(bool enabled);
  bool contextEnabled()const{return contextEnabled_;}
- void setDarkUi(bool dark){if(darkUi_==dark)return;darkUi_=dark;update();}
+ void setDarkUi(bool dark){if(darkUi_==dark)return;darkUi_=dark;hudDirty_=true;update();}
  bool darkUi()const{return darkUi_;}
  void setBasemapMode(const QString &mode);
  QString basemapMode()const{return basemapMode_;}
@@ -30,12 +31,12 @@ public:
  QJsonObject basemapDiagnostics()const;
  void setProject(const ga::Project *project);
  void setPresentation(QVector<ga::Layer> layers,ga::Palette palette,QString diagram);
- void setLanguage(bool english){english_=english;update();}
+ void setLanguage(bool english){english_=english;hudDirty_=true;update();}
  void centerOn(double lat,double lon,double zoom=16);
  QPointF location() const;
  QJsonObject view() const{return{{"lat",lat_},{"lon",lon_},{"zoom",zoom_},{"context_style",contextEnabled_},{"basemap_mode",basemapMode_},{"hanoi_planning",hanoiPlanEnabled_},{"hanoi_planning_layer",hanoiPlanLayer_},{"hanoi_planning_opacity",hanoiPlanOpacity_},{"renderer","maplibre-native"}};}
  void zoomBy(double amount);
- void setCandidate(const ga::Site &site,bool locked=false){candidate_=site;candidateLocked_=locked;update();}
+ void setCandidate(const ga::Site &site,bool locked=false){candidate_=site;candidateLocked_=locked;hudDirty_=true;update();}
  void beginBoundaryDrawing();
  void finishBoundaryDrawing();
  void undoBoundaryVertex();
@@ -86,8 +87,11 @@ private:
  QTimer *loadingTimer_=nullptr;
  unsigned vectorGlError_=0;
  QJsonObject originalStyle_;
- QImage siteOverlay_;
- bool contextEnabled_=true,styleReady_=false,fullyRendered_=false,overlayDirty_=true,darkUi_=false;
+ QImage siteOverlay_,hudBuffer_;
+ QSize lastVectorSize_,lastVectorPixelSize_;
+ unsigned lastVectorFbo_=0;
+ bool contextEnabled_=true,styleReady_=false,fullyRendered_=false,overlayDirty_=true,hudDirty_=true,hasSiteOverlay_=false,darkUi_=false;
+ bool deferredNavSync_=false;
  bool hanoiPlanEnabled_=false;
  QString hanoiPlanLayer_=QStringLiteral("qhpk"),appliedHanoiLayer_;
  double hanoiPlanOpacity_=0.78;

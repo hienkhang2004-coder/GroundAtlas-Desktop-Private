@@ -749,6 +749,167 @@ private slots:
   QVERIFY(QFileInfo(png3d).size() > 10000);
   win.hide();
  }
+
+ void halongCvddPlanningOverlayAndZeroLagZoom() {
+  // 1. Verify Ha Long CVDD 2025 layer metadata, bounds, local HTTP tile server, and instant disk fast-path
+  const auto info = ga::hanoiPlanningLayerInfo(QStringLiteral("halong_cvdd"));
+  QCOMPARE(info.id, QStringLiteral("halong_cvdd"));
+  QCOMPARE(info.minZoom, 12);
+  QCOMPARE(info.maxZoom, 18);
+  QVERIFY(info.hasBounds);
+  QVERIFY(info.west > 107.0 && info.east < 107.12);
+  QVERIFY(info.south > 20.92 && info.north < 20.99);
+  QVERIFY(ga::isLikelyInHaLongArea(info.focusLat, info.focusLon));
+  QVERIFY(!ga::isLikelyInHaLongArea(21.0288, 105.8525));
+  QVERIFY(info.urlTemplate.contains(QStringLiteral("/halong-cvdd/{z}/{x}/{y}.png")));
+
+  // Verify instant direct-disk tile compositing right over Cảng tàu quốc tế Hạ Long (zero white background!)
+  ga::Site hlSite;
+  hlSite.name = QStringLiteral("Cảng tàu QT Hạ Long · CV Đại Dương");
+  hlSite.lat = info.focusLat;
+  hlSite.lon = info.focusLon;
+  hlSite.radius = 360.0;
+  hlSite.shape = QStringLiteral("circle");
+
+  QTemporaryDir tmp;
+  QVERIFY(tmp.isValid());
+  ga::HanoiPlanningTileFetcher fetcher(tmp.path());
+  QSignalSpy readySpy(&fetcher, &ga::HanoiPlanningTileFetcher::compositeReady);
+  QElapsedTimer fetchTimer;
+  fetchTimer.start();
+  fetcher.fetchForSite(hlSite, QStringLiteral("halong_cvdd"));
+  QTRY_COMPARE_WITH_TIMEOUT(readySpy.size(), 1, 2000);
+  const qint64 fetchMs = fetchTimer.elapsed();
+  const auto comp = qvariant_cast<ga::HanoiTileComposite>(readySpy.last()[0]);
+  QVERIFY(comp.valid());
+  QCOMPARE(comp.layerId, QStringLiteral("halong_cvdd"));
+  QVERIFY(comp.tilesAvailable > 0);
+  QVERIFY(comp.zoom >= 17);
+  qInfo() << "Ha Long CVDD instant composite:" << comp.tilesAvailable << "/" << comp.tilesTotal
+          << "tiles at z" << comp.zoom << "in" << fetchMs << "ms";
+
+  // Verify transparent background is genuinely stripped (both alpha==0 AND colored opaque parcels exist!)
+  int transparentPx = 0, coloredPx = 0;
+  for (int y = 0; y < comp.image.height(); y += 4) {
+   for (int x = 0; x < comp.image.width(); x += 4) {
+    const QRgb px = comp.image.pixel(x, y);
+    if (qAlpha(px) == 0) ++transparentPx;
+    else if (qAlpha(px) > 180 && (qRed(px) < 245 || qGreen(px) < 245 || qBlue(px) < 245)) ++coloredPx;
+   }
+  }
+  QVERIFY2(transparentPx > 100, qPrintable(QString("Expected transparent background pixels, got %1").arg(transparentPx)));
+  QVERIFY2(coloredPx > 500, qPrintable(QString("Expected opaque planning parcels, got %1").arg(coloredPx)));
+
+  // 2. When running on real hardware GPU with GA_V012_SCREENSHOT_DIR, capture live Map (Satellite + Vector) & 3D + benchmark rapid zoom!
+  const QString shotDir = qEnvironmentVariable("GA_V012_SCREENSHOT_DIR");
+  if (shotDir.isEmpty()) return;
+
+  QDir().mkpath(shotDir);
+  const QString dataDir = QStringLiteral(GA_DATA);
+  ga::loadPresentationCatalog(dataDir + "/presentations.json");
+
+  MainWindow win(tmp.filePath("hl-session"), dataDir + "/hoankiem.gatlas");
+  win.resize(1480, 940);
+  win.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&win, 5000));
+
+  auto captureWindow = [&](const QString &filePath) -> bool {
+   QTest::qWait(220);
+   QImage img = win.grab().toImage();
+   if (auto *mc = win.findChild<MapCanvas *>()) {
+    if (mc->isVisible()) {
+     const QImage gl = mc->grabFramebuffer();
+     if (!gl.isNull()) {
+      QPainter p(&img);
+      const QPoint pos = mc->mapTo(&win, QPoint(0, 0));
+      p.drawImage(QRect(pos, mc->size()), gl);
+      p.end();
+     }
+    }
+   }
+   if (win.viewport() && win.viewport()->isVisible()) {
+    const QImage gl = win.viewport()->grabFramebuffer();
+    if (!gl.isNull()) {
+     QPainter p(&img);
+     const QPoint pos = win.viewport()->mapTo(&win, QPoint(0, 0));
+     p.drawImage(QRect(pos, win.viewport()->size()), gl);
+     p.end();
+    }
+   }
+   return img.save(filePath);
+  };
+
+  auto *mapAct = win.findChild<QAction *>("map");
+  auto *mc = win.findChild<MapCanvas *>();
+  QVERIFY(mapAct && mc);
+  mapAct->trigger();
+  QTest::qWait(300);
+
+  // Switch to Satellite + enable Ha Long CVDD 2025 planning layer (auto-jumps to Cảng tàu QT Hạ Long!)
+  mc->setBasemapMode(QStringLiteral("satellite"));
+  win.setHanoiPlanning(true, QStringLiteral("halong_cvdd"), 0.80);
+  QCOMPARE(mc->hanoiPlanningLayer(), QStringLiteral("halong_cvdd"));
+  mc->centerOn(info.focusLat, info.focusLon, 16.0);
+  QTRY_VERIFY_WITH_TIMEOUT(mc->basemapDiagnostics()["fully_rendered"].toBool(), 20000);
+  QTest::qWait(350);
+  QVERIFY2(mc->basemapDiagnostics()["error"].toString().isEmpty(),
+           qPrintable("Map error: " + mc->basemapDiagnostics()["error"].toString()));
+  QCOMPARE(mc->basemapDiagnostics()["gl_error"].toInt(), 0);
+  QVERIFY(captureWindow(shotDir + "/native-v232-halong-map-satellite-qh.png"));
+
+  // Benchmark rapid wheel zoom sweep (z13.5 -> z18.0 -> z14.0, 40 wheel ticks with live GPU repaints)
+  mc->centerOn(info.focusLat, info.focusLon, 14.0);
+  QTest::qWait(400);
+  QVector<double> frameMs;
+  frameMs.reserve(40);
+  const QPointF centerPt(mc->width() * 0.5, mc->height() * 0.5);
+  for (int i = 0; i < 40; ++i) {
+   const int dy = (i < 20) ? 60 : -60;
+   QElapsedTimer t;
+   t.start();
+   QWheelEvent wheel(centerPt, centerPt, QPoint(), QPoint(0, dy), Qt::NoButton, Qt::NoModifier, Qt::ScrollUpdate, false);
+   QApplication::sendEvent(mc, &wheel);
+   mc->repaint();
+   QCoreApplication::processEvents();
+   frameMs.append(double(t.nsecsElapsed()) / 1e6);
+  }
+  std::sort(frameMs.begin(), frameMs.end());
+  const double avgMs = std::accumulate(frameMs.begin(), frameMs.end(), 0.0) / double(frameMs.size());
+  const double p95Ms = frameMs[int(frameMs.size() * 0.95)];
+  qInfo() << "Ha Long Map Zoom Sweep (40 frames): avg =" << avgMs << "ms, p95 =" << p95Ms << "ms, max =" << frameMs.last() << "ms";
+  QCOMPARE(mc->basemapDiagnostics()["gl_error"].toInt(), 0);
+  QVERIFY2(avgMs < 25.0, qPrintable(QString("Expected smooth zoom avg < 25ms, got %1ms").arg(avgMs)));
+
+  // Capture Vector Basemap + transparent Ha Long CVDD 2025 overlay
+  mc->setBasemapMode(QStringLiteral("vector"));
+  mc->centerOn(info.focusLat, info.focusLon, 16.0);
+  QTRY_VERIFY_WITH_TIMEOUT(mc->basemapDiagnostics()["fully_rendered"].toBool(), 20000);
+  QTest::qWait(350);
+  QVERIFY(captureWindow(shotDir + "/native-v232-halong-map-vector-qh.png"));
+
+  // Also test 2D/3D viewport draping over Ha Long Cruise Port (using synthetic minimal site project so zero Overpass timeout risk)
+  ga::Project hlProj;
+  hlProj.site = hlSite;
+  hlProj.style = QStringLiteral("suushka-study");
+  const QString hlPath = tmp.filePath("halong_port.gatlas");
+  hlProj.save(hlPath);
+  QVERIFY(win.loadPath(hlPath, false));
+  win.setHanoiPlanning(true, QStringLiteral("halong_cvdd"), 0.84);
+  QTRY_VERIFY_WITH_TIMEOUT(win.viewport()->hanoiTileComposite().valid(), 5000);
+  auto cam3 = win.viewport()->camera();
+  cam3.mode = QStringLiteral("3d");
+  cam3.projection = QStringLiteral("perspective");
+  cam3.yaw = -28.0;
+  cam3.elevation = 48.0;
+  cam3.zoom = 1.25;
+  win.viewport()->setCamera(cam3);
+  if (auto *v3 = win.findChild<QAction *>("view-3d")) v3->trigger();
+  QTest::qWait(1400);
+  QVERIFY(captureWindow(shotDir + "/native-v232-halong-3d-qh.png"));
+
+  win.setHanoiPlanning(false);
+  win.hide();
+ }
 };
 
 int main(int argc, char **argv) {

@@ -1206,16 +1206,16 @@ void MainWindow::buildUi() {
  connect(m3dRemoveBtn_, &QPushButton::clicked, this, &MainWindow::removeSelectedModel3d);
  layout->addWidget(m3dCard);
 
- // CARD 2A-bis: LỚP QUY HOẠCH SỬ DỤNG ĐẤT HÀ NỘI (quyhoach.hanoi.vn — 1-CLICK BẬT / TẮT ĐÈ LÊN BẢN ĐỒ, 2D & 3D)
+ // CARD 2A-bis: LỚP QUY HOẠCH SỬ DỤNG ĐẤT (HÀ NỘI & HẠ LONG — 1-CLICK BẬT / TẮT ĐÈ LÊN BẢN ĐỒ, 2D & 3D)
  auto *planCard = new QFrame(leftBody);
  planCard->setObjectName("v2-card");
  auto *plCardLay = new QVBoxLayout(planCard);
  plCardLay->setContentsMargins(11, 10, 11, 11);
  plCardLay->setSpacing(6);
  auto *plHead = new QHBoxLayout();
- plHead->addWidget(label("QUY HOẠCH HÀ NỘI", "HANOI LAND-USE PLAN", "eyebrow"));
+ plHead->addWidget(label("BẢN ĐỒ QUY HOẠCH", "LAND-USE PLANNING", "eyebrow"));
  plHead->addStretch();
- auto *plTag = new QLabel("quyhoach.hanoi.vn", planCard);
+ auto *plTag = new QLabel("HN · Hạ Long", planCard);
  plTag->setObjectName("pro-tag");
  plHead->addWidget(plTag);
  plCardLay->addLayout(plHead);
@@ -1227,9 +1227,12 @@ void MainWindow::buildUi() {
  hanoiPlanToggleBtn_->setMinimumWidth(0);
  hanoiPlanToggleBtn_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
  translations_.append([=, this] {
+  const bool hl = (hanoiPlanLayer_ == "halong_cvdd");
   hanoiPlanToggleBtn_->setText(hanoiPlanEnabled_
-   ? trText("✓ Đang đè lớp Quy hoạch Hà Nội", "✓ Hanoi Land-Use Layer Active")
-   : trText("Bật lớp Quy hoạch Hà Nội", "Overlay Hanoi Land-Use Layer"));
+   ? (hl ? trText("✓ Đang đè QH Hạ Long (CVDD 2025)", "✓ Ha Long CVDD 2025 Active")
+         : trText("✓ Đang đè lớp Quy hoạch Hà Nội", "✓ Hanoi Land-Use Layer Active"))
+   : (hl ? trText("Bật lớp QH Hạ Long (CVDD 2025)", "Overlay Ha Long CVDD 2025")
+         : trText("Bật lớp Quy hoạch sử dụng đất", "Overlay Land-Use Planning")));
  });
  connect(hanoiPlanToggleBtn_, &QPushButton::clicked, this, [this](bool on) {
   setHanoiPlanning(on);
@@ -2334,23 +2337,34 @@ void MainWindow::buildUi() {
  hanoiTiles_ = new ga::HanoiPlanningTileFetcher(dataDirectory_ + "/map-cache", this);
  connect(hanoiTiles_, &ga::HanoiPlanningTileFetcher::fetchProgress, this, [this](int done, int total) {
   if (!hanoiPlanEnabled_) return;
-  hanoiPlanStatus_ = trText("Đang tải lớp QH quyhoach.hanoi.vn (%1/%2)…", "Loading quyhoach.hanoi.vn tiles (%1/%2)…").arg(done).arg(total);
+  const QString srcLbl = (hanoiPlanLayer_ == "halong_cvdd")
+   ? QStringLiteral("QH Hạ Long CVDD 2025")
+   : QStringLiteral("quyhoach.hanoi.vn");
+  hanoiPlanStatus_ = trText("Đang tải lớp %1 (%2/%3)…", "Loading %1 tiles (%2/%3)…").arg(srcLbl).arg(done).arg(total);
   if (hanoiPlanStatusLbl_) hanoiPlanStatusLbl_->setText(hanoiPlanStatus_);
  });
  connect(hanoiTiles_, &ga::HanoiPlanningTileFetcher::compositeReady, this, [this](ga::HanoiTileComposite comp) {
   if (!hanoiPlanEnabled_) return;
   viewport_->setHanoiTileComposite(comp);
+  const bool hl = (comp.layerId == "halong_cvdd" || hanoiPlanLayer_ == "halong_cvdd");
   if (comp.valid()) {
-   hanoiPlanStatus_ = trText("Đang đè %1/%2 ô quyhoach.hanoi.vn (z%3) trên Bản đồ, 2D & 3D.",
-                             "Overlaying %1/%2 quyhoach.hanoi.vn tiles (z%3) on Map, 2D & 3D.")
-    .arg(comp.tilesAvailable).arg(comp.tilesTotal).arg(comp.zoom);
+   hanoiPlanStatus_ = hl
+    ? trText("Đang đè %1/%2 ô QH Hạ Long CVDD 2025 (z%3) trên Bản đồ, 2D & 3D.",
+             "Overlaying %1/%2 Ha Long CVDD 2025 tiles (z%3) on Map, 2D & 3D.")
+       .arg(comp.tilesAvailable).arg(comp.tilesTotal).arg(comp.zoom)
+    : trText("Đang đè %1/%2 ô quyhoach.hanoi.vn (z%3) trên Bản đồ, 2D & 3D.",
+             "Overlaying %1/%2 quyhoach.hanoi.vn tiles (z%3) on Map, 2D & 3D.")
+       .arg(comp.tilesAvailable).arg(comp.tilesTotal).arg(comp.zoom);
   } else {
-   hanoiPlanStatus_ = trText("Khu đất đang mở ngoài vùng phủ quyhoach.hanoi.vn (Hà Nội).",
-                             "Current site is outside quyhoach.hanoi.vn Hanoi tile coverage.");
+   hanoiPlanStatus_ = hl
+    ? trText("Khu đất đang mở ngoài vùng phủ QH Hạ Long (Cảng tàu QT & CV Đại Dương).",
+             "Current site is outside Ha Long CVDD 2025 tile coverage.")
+    : trText("Khu đất đang mở ngoài vùng phủ quyhoach.hanoi.vn (Hà Nội).",
+             "Current site is outside quyhoach.hanoi.vn Hanoi tile coverage.");
   }
   if (hanoiPlanStatusLbl_) hanoiPlanStatusLbl_->setText(hanoiPlanStatus_);
  });
- connect(map_, &MapCanvas::hanoiPlanningToggled, this, [this](bool on) { setHanoiPlanning(on); });
+ connect(map_, &MapCanvas::hanoiPlanningToggled, this, [this](bool on) { setHanoiPlanning(on, map_ ? map_->hanoiPlanningLayer() : QString{}); });
  connect(viewport_, &Viewport::hanoiPlanningToggled, this, [this](bool on) { setHanoiPlanning(on); });
  {
   QFile config(dataDirectory_ + "/network.json");
@@ -2592,7 +2606,14 @@ void MainWindow::buildUi() {
   chooseSite(lat, lon, name);
   const int osmIdx = sourceChoice_->findData("osm");
   if (osmIdx >= 0) { const QSignalBlocker b(sourceChoice_); sourceChoice_->setCurrentIndex(osmIdx); syncSelection(); }
-  showToast(trText("Đã di chuyển tới ", "Jumped to ") + name, QColor("#3b63fb"), 2000);
+  if (hanoiPlanEnabled_) {
+   if (ga::isLikelyInHaLongArea(lat, lon) && hanoiPlanLayer_ != "halong_cvdd") {
+    setHanoiPlanning(true, QStringLiteral("halong_cvdd"), hanoiPlanOpacity_);
+   } else if (ga::isLikelyInHanoiArea(lat, lon) && hanoiPlanLayer_ == "halong_cvdd") {
+    setHanoiPlanning(true, QStringLiteral("qhpk"), hanoiPlanOpacity_);
+   }
+  }
+  showToast(trText("Đã di chuyển tới ", "Jumped to ") + name, QColor("#131313"), 2000);
  });
  connect(map_, &MapCanvas::loadSiteRequested, this, [this] {
   if (!loadButton_ || !loadButton_->isEnabled()) return;
@@ -3159,7 +3180,7 @@ void MainWindow::syncProject() {
  if (!hqObj.isEmpty()) {
   hanoiPlanEnabled_ = hqObj["enabled"].toBool(hanoiPlanEnabled_);
   const QString lid = hqObj["layer"].toString();
-  if (lid == "qhpk" || lid == "khsdd" || lid == "qhct") hanoiPlanLayer_ = lid;
+  if (ga::isSupportedPlanningLayer(lid)) hanoiPlanLayer_ = lid;
   hanoiPlanOpacity_ = std::clamp(hqObj["opacity"].toDouble(hanoiPlanOpacity_), 0.15, 1.0);
  }
  map_->setHanoiPlanning(hanoiPlanEnabled_, hanoiPlanLayer_, hanoiPlanOpacity_);
@@ -4190,8 +4211,31 @@ void MainWindow::setHanoiPlanning(bool enabled, const QString &layerId, double o
  const bool wasEnabled = hanoiPlanEnabled_;
  const QString prevLayer = hanoiPlanLayer_;
  hanoiPlanEnabled_ = enabled;
- if (layerId == "qhpk" || layerId == "khsdd" || layerId == "qhct" || layerId == "custom") hanoiPlanLayer_ = layerId;
+ const bool explicitLayer = ga::isSupportedPlanningLayer(layerId);
+ if (explicitLayer) {
+  hanoiPlanLayer_ = layerId;
+ } else if (enabled) {
+  // Auto-select matching regional planning layer based on active view coordinates
+  const auto mv = map_ ? map_->view() : QJsonObject{};
+  const double refLat = (geographic_ && mv["lat"].isDouble()) ? mv["lat"].toDouble() : project_.site.lat;
+  const double refLon = (geographic_ && mv["lon"].isDouble()) ? mv["lon"].toDouble() : project_.site.lon;
+  if (ga::isLikelyInHaLongArea(refLat, refLon)) {
+   hanoiPlanLayer_ = QStringLiteral("halong_cvdd");
+  } else if (hanoiPlanLayer_ == "halong_cvdd" && ga::isLikelyInHanoiArea(refLat, refLon)) {
+   hanoiPlanLayer_ = QStringLiteral("qhpk");
+  }
+ }
  if (opacity >= 0.05) hanoiPlanOpacity_ = std::clamp(opacity, 0.15, 1.0);
+
+ // When explicitly selecting Ha Long CVDD while map is elsewhere, pan straight to Ha Long Int'l Cruise Port
+ if (hanoiPlanEnabled_ && explicitLayer && hanoiPlanLayer_ == "halong_cvdd" && prevLayer != "halong_cvdd" && map_) {
+  const auto info = ga::hanoiPlanningLayerInfo(hanoiPlanLayer_);
+  const auto mv = map_->view();
+  if (!ga::isLikelyInHaLongArea(mv["lat"].toDouble(), mv["lon"].toDouble())) {
+   map_->centerOn(info.focusLat, info.focusLon, 15.8);
+   chooseSite(info.focusLat, info.focusLon, trText("Cảng tàu QT Hạ Long · CV Đại Dương", "Ha Long Int'l Cruise Port · Ocean Park"));
+  }
+ }
 
  if (map_) map_->setHanoiPlanning(hanoiPlanEnabled_, hanoiPlanLayer_, hanoiPlanOpacity_);
  if (viewport_) viewport_->setHanoiPlanning(hanoiPlanEnabled_, hanoiPlanLayer_, hanoiPlanOpacity_);
@@ -4211,15 +4255,30 @@ void MainWindow::setHanoiPlanning(bool enabled, const QString &layerId, double o
  syncPlanningUi();
  markModified();
  if (wasEnabled != hanoiPlanEnabled_ || prevLayer != hanoiPlanLayer_) {
+  const bool hl = (hanoiPlanLayer_ == "halong_cvdd");
   showToast(hanoiPlanEnabled_
-   ? trText("Đã bật lớp Quy hoạch sử dụng đất Hà Nội (quyhoach.hanoi.vn)", "Enabled Hanoi Land-Use Planning layer (quyhoach.hanoi.vn)")
-   : trText("Đã tắt lớp Quy hoạch Hà Nội", "Disabled Hanoi Land-Use Planning layer"),
-   hanoiPlanEnabled_ ? QColor("#c45632") : QColor("#64748b"), 2200);
+   ? (hl ? trText("Đã bật lớp QH Hạ Long · CV Đại Dương & Cảng tàu QT (2025)", "Enabled Ha Long Ocean Park & Cruise Port Plan (2025)")
+         : trText("Đã bật lớp Quy hoạch sử dụng đất Hà Nội (quyhoach.hanoi.vn)", "Enabled Hanoi Land-Use Planning layer (quyhoach.hanoi.vn)"))
+   : trText("Đã tắt lớp Quy hoạch sử dụng đất", "Disabled Land-Use Planning layer"),
+   hanoiPlanEnabled_ ? QColor("#131313") : QColor("#64748b"), 2200);
  }
 }
 
 void MainWindow::refreshHanoiPlanningTiles() {
  if (!hanoiTiles_ || !hanoiPlanEnabled_) return;
+ if (hanoiPlanLayer_ == "halong_cvdd") {
+  if (!ga::isLikelyInHaLongArea(project_.site.lat, project_.site.lon)) {
+   if (viewport_) viewport_->setHanoiTileComposite({});
+   hanoiPlanStatus_ = trText("Khu đất đang mở ngoài Hạ Long · bấm 'Hạ Long' trên Bản đồ hoặc Nạp OSM tại Cảng tàu QT Hạ Long.",
+                             "Current site is outside Ha Long · click 'Ha Long' on Map or Load OSM at Cruise Port.");
+   if (hanoiPlanStatusLbl_) hanoiPlanStatusLbl_->setText(hanoiPlanStatus_);
+   return;
+  }
+  hanoiPlanStatus_ = trText("Đang nạp lớp QH Hạ Long CVDD 2025 (Z12–Z18)…", "Loading Ha Long CVDD 2025 tiles (Z12–Z18)…");
+  if (hanoiPlanStatusLbl_) hanoiPlanStatusLbl_->setText(hanoiPlanStatus_);
+  hanoiTiles_->fetchForSite(project_.site, hanoiPlanLayer_);
+  return;
+ }
  if (hanoiPlanLayer_ != "custom" && !ga::isLikelyInHanoiArea(project_.site.lat, project_.site.lon)) {
   if (viewport_) viewport_->setHanoiTileComposite({});
   hanoiPlanStatus_ = trText("Khu đất đang mở ngoài Hà Nội · bật trên Bản đồ để xem vùng Hà Nội.",
@@ -4279,9 +4338,12 @@ void MainWindow::syncPlanningUi() {
       ? "QPushButton{background:#f5f5f5;color:#131313;border:1px solid #f5f5f5;border-radius:14px;min-height:18px;font-weight:600;padding:5px 12px;} QPushButton:hover{background:#ffffff;}"
       : "QPushButton{background:#131313;color:#ffffff;border:1px solid #131313;border-radius:14px;min-height:18px;font-weight:600;padding:5px 12px;} QPushButton:hover{background:#2d2d2d;}")
    : QString());
+  const bool hl = (hanoiPlanLayer_ == "halong_cvdd");
   hanoiPlanToggleBtn_->setText(hanoiPlanEnabled_
-   ? trText("✓ Đang đè lớp Quy hoạch Hà Nội", "✓ Hanoi Land-Use Layer Active")
-   : trText("Bật lớp Quy hoạch Hà Nội", "Overlay Hanoi Land-Use Layer"));
+   ? (hl ? trText("✓ Đang đè QH Hạ Long (CVDD 2025)", "✓ Ha Long CVDD 2025 Active")
+         : trText("✓ Đang đè lớp Quy hoạch Hà Nội", "✓ Hanoi Land-Use Layer Active"))
+   : (hl ? trText("Bật lớp QH Hạ Long (CVDD 2025)", "Overlay Ha Long CVDD 2025")
+         : trText("Bật lớp Quy hoạch sử dụng đất", "Overlay Land-Use Planning")));
  }
  if (hanoiPlanOpacitySlider_) {
   const QSignalBlocker sb(hanoiPlanOpacitySlider_);

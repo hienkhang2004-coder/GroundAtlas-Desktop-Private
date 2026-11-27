@@ -219,7 +219,7 @@ void Viewport::setPlanningImageOverlay(const ga::PlanningImageOverlay &img){
  update();
 }
 void Viewport::setHanoiPlanning(bool enabled,const QString &layerId,double opacity){
- const QString norm=(layerId=="khsdd"||layerId=="qhct"||layerId=="custom")?layerId:QStringLiteral("qhpk");
+ const QString norm=ga::normalizePlanningLayerId(layerId);
  const double op=std::clamp(opacity,0.05,1.0);
  hanoiPlanEnabled_=enabled;
  hanoiPlanLayer_=norm;
@@ -2256,7 +2256,7 @@ QVector<Viewport::DockItem> Viewport::dockItems() const {
   {"grid",42,tr("Lưới","Grid"),tr("Lưới tọa độ 100 m","100 m coordinate grid"),camera_.grid,false,2},
   {"measure",52,tr("Thước","Ruler"),tr("Đo khoảng cách & diện tích (M)","Measure distance & area (M)"),measuring_,true,2},
   {"section",56,tr("Cắt A-A'","Cut A-A'"),tr("Kéo mặt cắt trực tiếp A–A'","Interactive Live Section A–A'"),sectionCutActive_,true,2},
-  {"hanoi-qh",52,tr("QH HN","HN Plan"),tr("Bật/tắt Quy hoạch sử dụng đất Hà Nội (quyhoach.hanoi.vn)","Toggle Hanoi Land-Use Planning Layer (quyhoach.hanoi.vn)"),hanoiPlanEnabled_,true,2},
+  {"hanoi-qh",52,(hanoiPlanLayer_=="halong_cvdd"||(project_&&ga::isLikelyInHaLongArea(project_->site.lat,project_->site.lon)))?tr("QH HL","HL Plan"):tr("QH HN","HN Plan"),(hanoiPlanLayer_=="halong_cvdd"||(project_&&ga::isLikelyInHaLongArea(project_->site.lat,project_->site.lon)))?tr("Bật/tắt Quy hoạch Hạ Long · CV Đại Dương & Cảng tàu QT (2025)","Toggle Ha Long Ocean Park & Cruise Port Plan (2025)"):tr("Bật/tắt Quy hoạch sử dụng đất Hà Nội (quyhoach.hanoi.vn)","Toggle Hanoi Land-Use Planning Layer (quyhoach.hanoi.vn)"),hanoiPlanEnabled_,true,2},
   {"sun",64,tr("☀ Nắng","☀ Sun"),QString::fromUtf8(english_?"GPU PCF Soft Shadows (%1px)":"Bóng đổ GPU PCF (%1px)").arg(shadowSize_),camera_.solar.enabled,true,0},
  };
  QVector<DockItem> out;

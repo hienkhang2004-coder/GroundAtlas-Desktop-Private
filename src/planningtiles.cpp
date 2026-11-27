@@ -1,11 +1,18 @@
 #include "planningtiles.h"
 #include "sitegeometry.h"
+#include <QCache>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QHostAddress>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QPainter>
+#include <QPointer>
+#include <QRegularExpression>
 #include <QSaveFile>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QUrl>
 #include <algorithm>
 #include <cmath>
@@ -41,6 +48,108 @@ QString &customTemplateStorage() {
  return tmpl;
 }
 
+// Ultra-low-latency local HTTP XYZ tile server for bundled planning pyramids (e.g. Ha Long CVDD).
+// Serves sparse transparent PNG tiles from RAM cache (< 0.05 ms) and replies HTTP 204 No Content
+// for empty tiles so MapLibre Native allocates zero GPU textures and suffers zero zoom stutter.
+class LocalPlanningTileServer : public QObject {
+public:
+ explicit LocalPlanningTileServer(QString rootDir, QObject *parent = nullptr)
+  : QObject(parent), rootDir_(std::move(rootDir)), ramCache_(40 * 1024 * 1024) {
+  server_.listen(QHostAddress::LocalHost, 0);
+  connect(&server_, &QTcpServer::newConnection, this, [this] {
+   while (QTcpSocket *sock = server_.nextPendingConnection()) {
+    sock->setSocketOption(QAbstractSocket::LowDelayOption, 1);
+    auto buf = std::make_shared<QByteArray>();
+    connect(sock, &QTcpSocket::readyRead, this, [this, sock, buf] {
+     buf->append(sock->readAll());
+     if (buf->size() > 16384) {
+      sock->disconnectFromHost();
+      return;
+     }
+     for (;;) {
+      const int hdrEnd = buf->indexOf("\r\n\r\n");
+      if (hdrEnd < 0) break;
+      const QByteArray req = buf->left(hdrEnd);
+      buf->remove(0, hdrEnd + 4);
+      handleRequest(sock, req);
+     }
+    });
+    connect(sock, &QTcpSocket::disconnected, sock, &QObject::deleteLater);
+   }
+  });
+ }
+
+ quint16 port() const { return server_.isListening() ? server_.serverPort() : 0; }
+
+private:
+ void handleRequest(QTcpSocket *sock, const QByteArray &req) {
+  const int nl = req.indexOf("\r\n");
+  const QByteArray firstLine = (nl >= 0) ? req.left(nl) : req;
+  const QList<QByteArray> parts = firstLine.split(' ');
+  const bool keepAlive = !req.contains("Connection: close") && !req.contains("connection: close")
+   && (parts.size() >= 3 && parts[2].contains("1.1"));
+  const QByteArray connHdr = keepAlive ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+
+  if (parts.size() < 2 || (parts[0] != "GET" && parts[0] != "HEAD")) {
+   sock->write("HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+   sock->disconnectFromHost();
+   return;
+  }
+
+  static const QRegularExpression rx(QStringLiteral("^/([a-z0-9_-]+)/([0-9]{1,2})/([0-9]{1,8})/([0-9]{1,8})\\.png(?:\\?.*)?$"));
+  const QString path = QString::fromUtf8(parts[1]);
+  const auto m = rx.match(path);
+  if (!m.hasMatch()) {
+   sock->write("HTTP/1.1 204 No Content\r\nCache-Control: public, max-age=86400, immutable\r\n" + connHdr + "\r\n");
+   if (!keepAlive) sock->disconnectFromHost();
+   return;
+  }
+
+  const QString relKey = m.captured(1) + QLatin1Char('/') + m.captured(2) + QLatin1Char('/') + m.captured(3) + QLatin1Char('/') + m.captured(4) + QStringLiteral(".png");
+  QByteArray payload;
+  if (const auto *cached = ramCache_.object(relKey)) {
+   payload = *cached;
+  } else {
+   QFile f(rootDir_ + QLatin1Char('/') + relKey);
+   if (f.open(QIODevice::ReadOnly)) {
+    payload = f.readAll();
+   }
+   // Cache both hits and misses (empty QByteArray) so sparse areas never re-stat disk.
+   ramCache_.insert(relKey, new QByteArray(payload), std::max(64, int(payload.size())));
+  }
+
+  if (payload.isEmpty()) {
+   sock->write("HTTP/1.1 204 No Content\r\nCache-Control: public, max-age=86400, immutable\r\n" + connHdr + "\r\n");
+  } else {
+   QByteArray hdr;
+   hdr.reserve(160);
+   hdr += "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: ";
+   hdr += QByteArray::number(payload.size());
+   hdr += "\r\nCache-Control: public, max-age=86400, immutable\r\n";
+   hdr += connHdr;
+   hdr += "\r\n";
+   sock->write(hdr);
+   if (parts[0] == "GET") sock->write(payload);
+  }
+  if (!keepAlive) sock->disconnectFromHost();
+ }
+
+ QString rootDir_;
+ QTcpServer server_;
+ QCache<QString, QByteArray> ramCache_;
+};
+
+QString localPlanningTileUrl(const QString &slug) {
+ static QPointer<LocalPlanningTileServer> s_server;
+ if (!s_server && QCoreApplication::instance()) {
+  s_server = new LocalPlanningTileServer(appDataPath(QStringLiteral("planning-tiles")), QCoreApplication::instance());
+ }
+ if (s_server && s_server->port() > 0) {
+  return QStringLiteral("http://127.0.0.1:%1/%2/{z}/{x}/{y}.png").arg(s_server->port()).arg(slug);
+ }
+ return QUrl::fromLocalFile(appDataPath(QStringLiteral("planning-tiles/") + slug)).toString() + QStringLiteral("/{z}/{x}/{y}.png");
+}
+
 } // namespace
 
 void setCustomPlanningTileTemplate(const QString &urlTemplate) {
@@ -67,44 +176,84 @@ QVector<HanoiTileLayerInfo> hanoiPlanningLayers() {
    QStringLiteral("QH Phân khu · Sử dụng đất (Hà Nội)"),
    QStringLiteral("Hanoi Subdivision Land-Use Zoning"),
    QStringLiteral("https://land.vietpalm.group/data/qhpk/{z}/{x}/{y}.png"),
-   10, 17
+   10, 17,
+   false, -180.0, -85.0, 180.0, 85.0,
+   21.0288, 105.8525,
+   {}
   },
   {
    QStringLiteral("khsdd"),
-   QStringLiteral("Kế hoạch sử dụng đất đến 2030"),
+   QStringLiteral("Kế hoạch sử dụng đất đến 2030 (Hà Nội)"),
    QStringLiteral("Hanoi Land-Use Plan 2030"),
    QStringLiteral("https://land.vietpalm.group/data/khsdd/{z}/{x}/{y}.png"),
-   10, 17
+   10, 17,
+   false, -180.0, -85.0, 180.0, 85.0,
+   21.0288, 105.8525,
+   {}
   },
   {
    QStringLiteral("qhct"),
-   QStringLiteral("QH Chi tiết dự án (1/500)"),
-   QStringLiteral("Detailed Project Plans (1:500)"),
+   QStringLiteral("QH Chi tiết dự án 1/500 (Hà Nội)"),
+   QStringLiteral("Hanoi Detailed Project Plans (1:500)"),
    QStringLiteral("https://land.vietpalm.group/data/qhct/{z}/{x}/{y}.png"),
-   10, 17
+   10, 17,
+   false, -180.0, -85.0, 180.0, 85.0,
+   21.0288, 105.8525,
+   {}
+  },
+  {
+   QStringLiteral("halong_cvdd"),
+   QStringLiteral("QH Hạ Long · CV Đại Dương & Cảng tàu QT (2025)"),
+   QStringLiteral("Ha Long · Ocean Park & Cruise Port Plan (2025)"),
+   localPlanningTileUrl(QStringLiteral("halong-cvdd")),
+   12, 18,
+   true, 107.021872, 20.930336, 107.092800, 20.975907,
+   20.953340, 107.055938,
+   appDataPath(QStringLiteral("planning-tiles/halong-cvdd"))
   },
   {
    QStringLiteral("custom"),
    QStringLiteral("Nguồn XYZ Quy hoạch tùy chỉnh (URL)"),
    QStringLiteral("Custom Planning XYZ Tile URL"),
    customTemplateStorage(),
-   8, 18
+   8, 18,
+   false, -180.0, -85.0, 180.0, 85.0,
+   0.0, 0.0,
+   {}
   }
  };
 }
 
+bool isSupportedPlanningLayer(const QString &layerId) {
+ return layerId == "qhpk" || layerId == "khsdd" || layerId == "qhct"
+  || layerId == "halong_cvdd" || layerId == "custom";
+}
+
+QString normalizePlanningLayerId(const QString &layerId) {
+ return isSupportedPlanningLayer(layerId) ? layerId : QStringLiteral("qhpk");
+}
+
+HanoiTileLayerInfo hanoiPlanningLayerInfo(const QString &layerId) {
+ const QString norm = normalizePlanningLayerId(layerId);
+ const auto layers = hanoiPlanningLayers();
+ for (const auto &info : layers) {
+  if (info.id == norm) return info;
+ }
+ return layers.first();
+}
+
 QString hanoiPlanningTileTemplate(const QString &layerId) {
- if (layerId == "custom" && !customTemplateStorage().isEmpty()) {
-  return customTemplateStorage();
- }
- for (const auto &info : hanoiPlanningLayers()) {
-  if (info.id == layerId && !info.urlTemplate.isEmpty()) return info.urlTemplate;
- }
+ const auto info = hanoiPlanningLayerInfo(layerId);
+ if (!info.urlTemplate.isEmpty()) return info.urlTemplate;
  return hanoiPlanningLayers().first().urlTemplate;
 }
 
 bool isLikelyInHanoiArea(double lat, double lon) {
  return lat >= 20.52 && lat <= 21.40 && lon >= 105.25 && lon <= 106.05;
+}
+
+bool isLikelyInHaLongArea(double lat, double lon) {
+ return lat >= 20.89 && lat <= 21.02 && lon >= 106.98 && lon <= 107.14;
 }
 
 struct HanoiPlanningTileFetcher::Job {
@@ -140,9 +289,10 @@ void HanoiPlanningTileFetcher::cancel() {
 
 void HanoiPlanningTileFetcher::fetchForSite(const Site &site, const QString &layerId) {
  cancel();
- const QString normalized = (layerId == "khsdd" || layerId == "qhct" || layerId == "custom") ? layerId : QStringLiteral("qhpk");
- const QString urlTmpl = hanoiPlanningTileTemplate(normalized);
- if (urlTmpl.isEmpty()) { emit compositeReady({}); return; }
+ const QString normalized = normalizePlanningLayerId(layerId);
+ const auto info = hanoiPlanningLayerInfo(normalized);
+ const QString urlTmpl = info.urlTemplate;
+ if (urlTmpl.isEmpty() && info.localTilesDir.isEmpty()) { emit compositeReady({}); return; }
 
  // Compute exact site geographic bbox
  const auto boundary = site.boundary.isEmpty() ? primitiveBoundary(site) : site.boundary;
@@ -155,15 +305,17 @@ void HanoiPlanningTileFetcher::fetchForSite(const Site &site, const QString &lay
   north = std::max(north, ll.y());
  }
 
- // Pick highest crisp native zoom (<= 17) keeping tile grid <= 6x6 (36 tiles)
- int z = 17;
+ // Pick highest crisp native zoom (up to info.maxZoom) keeping tile grid <= 6x6 (36 tiles)
  const double envR = envelopeRadius(site);
- if (envR > 1350.0) z = 15;
- else if (envR > 650.0) z = 16;
+ int z = info.maxZoom;
+ if (envR > 1350.0) z = std::min(info.maxZoom, 15);
+ else if (envR > 650.0) z = std::min(info.maxZoom, 16);
+ else if (envR > 360.0) z = std::min(info.maxZoom, 17);
+ z = std::clamp(z, info.minZoom, info.maxZoom);
 
  int xMin = lonToTileX(west, z), xMax = lonToTileX(east, z);
  int yMin = latToTileY(north, z), yMax = latToTileY(south, z);
- while (z > 12 && ((xMax - xMin + 1) > 6 || (yMax - yMin + 1) > 6)) {
+ while (z > info.minZoom && ((xMax - xMin + 1) > 6 || (yMax - yMin + 1) > 6)) {
   --z;
   xMin = lonToTileX(west, z);
   xMax = lonToTileX(east, z);
@@ -191,6 +343,31 @@ void HanoiPlanningTileFetcher::fetchForSite(const Site &site, const QString &lay
  job->tilesTotal = total;
  job->canvas = QImage(cols * 256, rows * 256, QImage::Format_ARGB32_Premultiplied);
  job->canvas.fill(Qt::transparent);
+
+ // Instant direct-disk fast path for bundled local XYZ pyramids (zero HTTP, < 5ms composite)
+ if (!info.localTilesDir.isEmpty()) {
+  QPainter p(&job->canvas);
+  for (int ty = yMin; ty <= yMax; ++ty) {
+   for (int tx = xMin; tx <= xMax; ++tx) {
+    const QString path = info.localTilesDir + QStringLiteral("/%1/%2/%3.png").arg(z).arg(tx).arg(ty);
+    if (QFile::exists(path)) {
+     QImage tile(path);
+     if (!tile.isNull()) {
+      const int dx = (tx - xMin) * 256;
+      const int dy = (ty - yMin) * 256;
+      if (tile.width() == 256 && tile.height() == 256) p.drawImage(dx, dy, tile);
+      else p.drawImage(dx, dy, tile.scaled(256, 256, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+      ++job->tilesAvailable;
+     }
+    }
+    ++job->tilesDone;
+   }
+  }
+  p.end();
+  emit fetchProgress(job->tilesDone, job->tilesTotal);
+  finalizeJob(job);
+  return;
+ }
 
  const QString tileDir = cacheDirectory_.isEmpty()
   ? QString()

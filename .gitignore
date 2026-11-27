@@ -3,6 +3,7 @@ build*/
 portable*/
 dist-macos/
 validation/
+data/planning-tiles/
 *.exe
 *.zip
 *.dmg
