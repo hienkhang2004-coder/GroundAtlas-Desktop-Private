@@ -16,6 +16,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QResizeEvent>
+#include <QHideEvent>
 #include <QSignalBlocker>
 #include <QSaveFile>
 #include <QSvgGenerator>
@@ -34,13 +35,16 @@
 Viewport::Viewport(QWidget *parent):Viewport(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)+"/map-cache",parent){}
 Viewport::Viewport(const QString &cache,QWidget *parent):QOpenGLWidget(parent){
  auto format=QSurfaceFormat::defaultFormat();
- format.setVersion(3,3);
+ if(!ga::globalBootSafety().useSoftwareOpenGL()){
+  format.setVersion(3,3);
 #ifdef Q_OS_MACOS
- format.setProfile(QSurfaceFormat::CoreProfile);
+  format.setProfile(QSurfaceFormat::CoreProfile);
 #else
- format.setProfile(QSurfaceFormat::CompatibilityProfile);
+  format.setProfile(QSurfaceFormat::CompatibilityProfile);
 #endif
+ }
  format.setStencilBufferSize(8);
+ format.setSamples(ga::globalBootSafety().desiredMsaaSamples());
  setFormat(format);
  setMinimumSize(360,300);
  setMouseTracking(true);
@@ -136,6 +140,14 @@ Viewport::Viewport(const QString &cache,QWidget *parent):QOpenGLWidget(parent){
  basemap_=std::make_unique<NativeBasemap>(cache);
  basemap_->setPresentation(layers_,palette_,contextStyled_);
  connect(basemap_.get(),&NativeBasemap::needsRendering,this,QOverload<>::of(&Viewport::update));
+ connect(basemap_.get(),&NativeBasemap::compatFallbackTriggered,this,[this](const QString &reason,int glErr){
+  gfxConfig_.ssaoEnabled=false;
+  gfxConfig_.ssaoSamples=0;
+  gfxConfig_.pcfQuality=0;
+  if(shadowSize_>1024){shadowSize_=1024;shadowNeedsResize_=true;}
+  emit compatFallbackTriggered(reason,glErr);
+  update();
+ });
 }
 Viewport::~Viewport(){cleanupGL();if(context())disconnect(context(),nullptr,this,nullptr);}
 void Viewport::shutdown(){cleanupGL();}
@@ -175,6 +187,14 @@ void Viewport::resizeEvent(QResizeEvent *event){
  if(preserve){const QSignalBlocker block(this);setGeographicView(previous.lat,previous.lon,previous.zoom+1);}
  if(project_)navigationSize_=size();
  if(project_)emit framingChanged();
+}
+void Viewport::hideEvent(QHideEvent *event){
+ dampTimer_.stop();
+ camAnimTimer_.stop();
+ dampZoomActive_=false;
+ dampYawVel_=dampElVel_=0.0;
+ interacting_=false;
+ QOpenGLWidget::hideEvent(event);
 }
 void Viewport::setContextStyleEnabled(bool value){contextStyled_=value;basemap_->setPresentation(layers_,palette_,value);update();}
 void Viewport::setContextVisible(bool value){if(contextVisible_==value)return;contextVisible_=value;interactionImage_.clear();contextViewDirty_=planDirty_=dirty_=true;update();}
@@ -474,15 +494,20 @@ void Viewport::initShadowMap(int size){
  glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT24,shadowSize_,shadowSize_,0,GL_DEPTH_COMPONENT,GL_FLOAT,nullptr);
  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
- glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_BORDER);
- glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_BORDER);
- const float borderColor[4]={1.0f,1.0f,1.0f,1.0f};
- glTexParameterfv(GL_TEXTURE_2D,GL_TEXTURE_BORDER_COLOR,borderColor);
+ glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+ glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
  glBindFramebuffer(GL_FRAMEBUFFER,shadowFbo_);
  glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,shadowTex_,0);
- glDrawBuffer(GL_NONE);
+ const GLenum noneBuf=GL_NONE;
+ glDrawBuffers(1,&noneBuf);
  glReadBuffer(GL_NONE);
- const GLenum status=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+ GLenum status=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+ if(status!=GL_FRAMEBUFFER_COMPLETE){
+  // Fallback to 16-bit depth texture for older Intel HD / software OpenGL drivers
+  glBindTexture(GL_TEXTURE_2D,shadowTex_);
+  glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT16,shadowSize_,shadowSize_,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_SHORT,nullptr);
+  status=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+ }
  glBindFramebuffer(GL_FRAMEBUFFER,defaultFramebufferObject());
  glBindTexture(GL_TEXTURE_2D,0);
  if(status!=GL_FRAMEBUFFER_COMPLETE){
@@ -520,7 +545,8 @@ void Viewport::initSsaoBuffers(int halfW,int halfH){
  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
  glBindFramebuffer(GL_FRAMEBUFFER,ssaoDepthFbo_);
  glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,ssaoDepthTex_,0);
- glDrawBuffer(GL_NONE);glReadBuffer(GL_NONE);
+ const GLenum noneBuf=GL_NONE;
+ glDrawBuffers(1,&noneBuf);glReadBuffer(GL_NONE);
  const GLenum st0=glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
  auto makeR8=[&](GLuint &fbo,GLuint &tex)->GLenum{
@@ -534,7 +560,8 @@ void Viewport::initSsaoBuffers(int halfW,int halfH){
   glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
   glBindFramebuffer(GL_FRAMEBUFFER,fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,tex,0);
-  glDrawBuffer(GL_COLOR_ATTACHMENT0);
+  const GLenum c0=GL_COLOR_ATTACHMENT0;
+  glDrawBuffers(1,&c0);
   return glCheckFramebufferStatus(GL_FRAMEBUFFER);
  };
  const GLenum st1=makeR8(ssaoFbo_,ssaoTex_);
@@ -553,7 +580,13 @@ void Viewport::initializeGL(){
  connect(context(),&QOpenGLContext::aboutToBeDestroyed,this,&Viewport::cleanupGL,Qt::DirectConnection);
  initializeOpenGLFunctions();
  const auto text=[&](GLenum name){const auto s=glGetString(name);return s?QString::fromLatin1(reinterpret_cast<const char*>(s)):QString();};
- renderer_=text(GL_RENDERER)+" · "+text(GL_VERSION);
+ glVersion_=text(GL_VERSION);
+ renderer_=text(GL_RENDERER)+" · "+glVersion_;
+ GLint maxTex=2048;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTex);
+ maxTextureSize_=std::max(512,int(maxTex));
+ GLint maxSamp=0;glGetIntegerv(GL_MAX_SAMPLES,&maxSamp);
+ if(glGetError()!=GL_NO_ERROR)maxSamp=0;
+ maxMsaaSamples_=std::max(0,int(maxSamp));
 
  // Pass 1: Hardware 2048x2048 Shadow Map Depth Shader (excludes emissive dome/sun triangles where length(normal) < 0.1)
  const char *shVert=R"(#version 150
@@ -870,12 +903,42 @@ void Viewport::initializeGL(){
   fragmentColor=vec4(clamp(col,0.0,1.0),paint.a);
  }
  )";
- if(!shader_.addShaderFromSourceCode(QOpenGLShader::Vertex,vertex)||!shader_.addShaderFromSourceCode(QOpenGLShader::Fragment,fragment)){graphicsError_=shader_.log();return;}
- shader_.bindAttributeLocation("position",0);
- shader_.bindAttributeLocation("normal",1);
- shader_.bindAttributeLocation("color",2);
- shader_.bindAttributeLocation("matType",3);
- if(!shader_.link()){graphicsError_=shader_.log();return;}
+ if(!shader_.addShaderFromSourceCode(QOpenGLShader::Vertex,vertex)||!shader_.addShaderFromSourceCode(QOpenGLShader::Fragment,fragment)||!shader_.link()){
+  // Universal GLSL 1.20 fallback for OpenGL 2.1 / 3.0 / Intel HD 3000 / Mesa 12 opengl32sw.dll!
+  shader_.removeAllShaders();
+  const char *v120=R"(#version 120
+  attribute vec3 position;attribute vec3 normal;attribute vec4 color;attribute float matType;
+  uniform mat4 matrix;uniform vec2 renderOffset;uniform float worldWidth;
+  varying vec4 paint;varying vec3 n;
+  void main(){
+   vec3 scene=position;scene.xy+=renderOffset;
+   if(scene.x>worldWidth*0.5)scene.x-=worldWidth;
+   else if(scene.x<-worldWidth*0.5)scene.x+=worldWidth;
+   gl_Position=matrix*vec4(scene,1.0);
+   paint=color;n=normal;
+  })";
+  const char *f120=R"(#version 120
+  varying vec4 paint;varying vec3 n;
+  uniform vec3 sunDir;
+  void main(){
+   if(length(n)<0.1){gl_FragColor=paint;return;}
+   float light=0.70+0.30*max(0.0,dot(normalize(n),normalize(sunDir)));
+   gl_FragColor=vec4(paint.rgb*light,paint.a);
+  })";
+  shader_.addShaderFromSourceCode(QOpenGLShader::Vertex,v120);
+  shader_.addShaderFromSourceCode(QOpenGLShader::Fragment,f120);
+  shader_.bindAttributeLocation("position",0);
+  shader_.bindAttributeLocation("normal",1);
+  shader_.bindAttributeLocation("color",2);
+  shader_.bindAttributeLocation("matType",3);
+  if(!shader_.link()){graphicsError_=shader_.log();return;}
+ }else{
+  shader_.bindAttributeLocation("position",0);
+  shader_.bindAttributeLocation("normal",1);
+  shader_.bindAttributeLocation("color",2);
+  shader_.bindAttributeLocation("matType",3);
+  if(!shader_.link()){graphicsError_=shader_.log();return;}
+ }
  // Textured Ground Overlay Shader (for Hanoi Land-Use Planning tiles draped under 3D buildings with real PCF shadows!)
  const char *ptVert=R"(#version 150
  in vec3 position;in vec2 uv;
@@ -1104,7 +1167,7 @@ void Viewport::renderScene3DToTarget(GLuint targetFbo,int pixelW,int pixelH,cons
   glDisable(GL_SCISSOR_TEST);glDisable(GL_STENCIL_TEST);glDisable(GL_CULL_FACE);glDisable(GL_BLEND);
   glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT);
   glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDepthMask(GL_TRUE);glStencilMask(0xFF);glClearStencil(0);
-  glDepthRange(0.0,1.0);glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);glPixelStorei(GL_UNPACK_ALIGNMENT,4);
+  glDepthRangef(0.0f,1.0f);glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);glPixelStorei(GL_UNPACK_ALIGNMENT,4);
   // Harmonize light vector basemap softly in Dark Mode when Auto-Dark Basemap is enabled (skip for Satellite imagery)
   if(basemapMode_!="satellite"&&darkUi_&&autoDarkBasemap_&&palette_.paper.lightnessF()>=0.4&&tintShader_.isLinked()){
    glDisable(GL_DEPTH_TEST);glDepthMask(GL_FALSE);

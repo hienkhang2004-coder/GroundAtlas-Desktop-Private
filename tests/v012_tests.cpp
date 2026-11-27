@@ -993,6 +993,78 @@ private slots:
 
   win.hide();
  }
+
+ void v233UniversalCompatibilityAndFallbacks() {
+  // 1. Hardware capability matrix: integrated GPUs, VMs, low maxTex, and Safe modes resolve safely
+  const auto intelHw = ga::probeHardware("Intel(R) Iris(R) Xe Graphics", nullptr, "4.6.0", 4096, 4);
+  QVERIFY(intelHw.recommendedTier != ga::PerfTier::Ultra);
+  const auto vmHw = ga::probeHardware("Microsoft Basic Render Driver", nullptr, "1.1.0", 1024, 0);
+  QCOMPARE(vmHw.recommendedTier, ga::PerfTier::Low);
+  const auto vmCfg = ga::resolveGraphicsConfig(ga::PerfTier::Auto, vmHw, ga::GraphicsCompatMode::Auto);
+  QVERIFY(!vmCfg.ssaoEnabled);
+  QVERIFY(vmCfg.shadowMapSize <= 1024);
+
+  const auto rtxHw = ga::probeHardware("NVIDIA GeForce RTX 3060/PCIe/SSE2", nullptr, "4.6.0", 16384, 8);
+  QCOMPARE(rtxHw.recommendedTier, ga::PerfTier::Ultra);
+  const auto compatCfg = ga::resolveGraphicsConfig(ga::PerfTier::Auto, rtxHw, ga::GraphicsCompatMode::Compatible);
+  QVERIFY(!compatCfg.ssaoEnabled);
+  QCOMPARE(compatCfg.shadowMapSize, 1024);
+  const auto swCfg = ga::resolveGraphicsConfig(ga::PerfTier::Ultra, rtxHw, ga::GraphicsCompatMode::SoftwareSafe);
+  QVERIFY(!swCfg.ssaoEnabled);
+  QVERIFY(!swCfg.architecturalCrease);
+
+  // 2. CLI safety flags & BootSafetyState behavior
+  const auto prevBoot = ga::globalBootSafety();
+  const auto stCompat = ga::beginGraphicsBoot({}, ga::GraphicsCompatMode::Auto, false, true, false);
+  QCOMPARE(stCompat.effectiveBootMode, ga::GraphicsCompatMode::Compatible);
+  QCOMPARE(stCompat.desiredMsaaSamples(), 0);
+  const auto stRaster = ga::beginGraphicsBoot({}, ga::GraphicsCompatMode::Auto, false, false, true);
+  QCOMPARE(stRaster.effectiveBootMode, ga::GraphicsCompatMode::RasterSafe);
+  QVERIFY(stRaster.forceRasterBasemap());
+  ga::setGlobalBootSafety(prevBoot);
+
+  // 3. Textured Quad blit mode + Universal QPainter Raster Fallback + System Diagnostic Report
+  if (QGuiApplication::platformName().contains("offscreen", Qt::CaseInsensitive)) return;
+  const QString dataDir = QString::fromUtf8(GA_DATA);
+  const QString outDir = qEnvironmentVariable("GA_V232_OUT");
+  QTemporaryDir tmp;
+  QVERIFY(tmp.isValid());
+  MainWindow win(tmp.filePath("v233-compat"), dataDir + "/hoankiem.gatlas");
+  win.resize(1320, 860);
+  win.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&win, 5000));
+  QTest::qWait(1400);
+
+  const auto vpDiag = win.viewport()->basemapDiagnostics();
+  QCOMPARE(vpDiag["blit_mode"].toString(), QString("textured-quad"));
+  QCOMPARE(vpDiag["gl_error"].toInt(), 0);
+
+  auto *mc = win.findChild<MapCanvas *>();
+  auto *mapAct = win.findChild<QAction *>("map");
+  QVERIFY(mc && mapAct);
+  mapAct->trigger();
+  mc->centerOn(21.0288, 105.8525, 15.0);
+  mc->setForceRasterFallback(true);
+  QVERIFY(mc->usingRasterFallback());
+  QTest::qWait(1800);
+  const QImage rasterShot = mc->grabFramebuffer();
+  QVERIFY(!rasterShot.isNull());
+  // Verify pixels outside center are NOT solid black (universal fallback drew light basemap/grid!)
+  const QColor cornerPx = rasterShot.pixelColor(rasterShot.width() / 6, rasterShot.height() / 6);
+  QVERIFY2(cornerPx.red() > 20 || cornerPx.green() > 20 || cornerPx.blue() > 20,
+           qPrintable(QString("Raster fallback corner unexpectedly black: %1").arg(cornerPx.name())));
+  QVERIFY(mc->basemapDiagnostics()["raster_fallback"].toBool());
+  if (!outDir.isEmpty()) {
+   QDir().mkpath(outDir);
+   rasterShot.save(outDir + "/verify_5_raster_fallback.png");
+  }
+  mc->setForceRasterFallback(false);
+
+  const QString diagReport = rtxHw.diagnosticReport(win.diagnostics(), ga::GraphicsCompatMode::Auto, false);
+  QVERIFY(diagReport.contains("GroundAtlas Desktop Diagnostics"));
+  QVERIFY(diagReport.contains("textured-quad"));
+  win.hide();
+ }
 };
 
 int main(int argc, char **argv) {

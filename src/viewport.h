@@ -9,7 +9,7 @@
 #include "planning.h"
 #include "planningtiles.h"
 #include <QOpenGLWidget>
-#include <QOpenGLFunctions_3_3_Core>
+#include <QOpenGLExtraFunctions>
 #include <QOpenGLBuffer>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLVertexArrayObject>
@@ -19,7 +19,7 @@
 #include <memory>
 class NativeBasemap;
 
-class Viewport:public QOpenGLWidget,protected QOpenGLFunctions_3_3_Core {
+class Viewport:public QOpenGLWidget,protected QOpenGLExtraFunctions {
  Q_OBJECT
 public:
  explicit Viewport(QWidget *parent=nullptr);
@@ -99,6 +99,9 @@ public:
  int selected() const {return selected_;}
  int triangleCount() const{return (mesh_.triangles.size()+mesh_.transparent.size())/3;}
  QString renderer() const {return renderer_;}
+ QString glVersion() const {return glVersion_;}
+ int maxTextureSize() const {return maxTextureSize_;}
+ int maxMsaaSamples() const {return maxMsaaSamples_;}
  QString graphicsError() const {return graphicsError_;}
  bool exportVector(const QString &file,bool pdf);
  bool exportObj(const QString &file);
@@ -123,10 +126,12 @@ signals:
  void placingModel3dChanged(bool active);
  void hanoiPlanningToggled(bool enabled);
  void basemapModeChanged(QString mode);
+ void compatFallbackTriggered(QString reason,int glError);
 protected:
  void initializeGL() override;
  void resizeGL(int,int)override;
  void resizeEvent(QResizeEvent *)override;
+ void hideEvent(QHideEvent *)override;
  void paintGL() override;
  void mousePressEvent(QMouseEvent *) override;
  void mouseMoveEvent(QMouseEvent *) override;
@@ -190,7 +195,8 @@ private:
  QTimer interactionIdle_;
  bool interacting_=false;
  QImage planImage_;
- QString diagram_="context",renderer_,graphicsError_;
+ QString diagram_="context",renderer_,glVersion_,graphicsError_;
+ int maxTextureSize_=4096,maxMsaaSamples_=4;
  bool dirty_=true,uploadDirty_=true,sunDirty_=true,sunUploadDirty_=true,shadowNeedsResize_=false,planDirty_=true,planCacheDirty_=true,english_=false,dragging_=false;
  bool darkUi_=false,hudDockVisible_=true,compassHovered_=false,basemapThumbHovered_=false;
  QString basemapMode_=QStringLiteral("vector");

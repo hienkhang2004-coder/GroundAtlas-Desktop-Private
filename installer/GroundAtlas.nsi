@@ -4,8 +4,8 @@ ManifestDPIAware true
 SetCompressor /SOLID lzma
 
 !define APP_NAME "GroundAtlas Desktop"
-!define APP_VERSION "2.3.2"
-!define APP_VERSION_FOUR "2.3.2.0"
+!define APP_VERSION "2.3.3"
+!define APP_VERSION_FOUR "2.3.3.0"
 !define APP_PUBLISHER "GroundAtlas"
 !define APP_EXE "GroundAtlas.exe"
 !define APP_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\GroundAtlasDesktop"
@@ -79,9 +79,10 @@ Section "${APP_NAME} ${APP_VERSION}" SecMain
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKCU "${APP_UNINST_KEY}" "EstimatedSize" "$0"
 
-  ; Start Menu & Desktop shortcuts
+  ; Start Menu & Desktop shortcuts (including Universal Safe Mode for legacy GPUs / VM / RDP)
   CreateDirectory "$SMPROGRAMS\${APP_NAME}"
   CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
+  CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME} (Chế độ an toàn · Safe Mode).lnk" "$INSTDIR\${APP_EXE}" "--safe-mode" "$INSTDIR\${APP_EXE}" 0
   CreateShortCut "$SMPROGRAMS\${APP_NAME}\Gỡ cài đặt ${APP_NAME}.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
   CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
 

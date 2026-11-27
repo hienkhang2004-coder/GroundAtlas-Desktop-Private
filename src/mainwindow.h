@@ -185,7 +185,10 @@ private:
  QString dataDirectory_, currentPath_, diagram_ = "context", activeAnalytic_;
  bool english_ = false, darkTheme_ = false, imperialUnits_ = false, modified_ = false, updating_ = false;
  ga::PerfTier perfTier_ = ga::PerfTier::Auto;
+ ga::GraphicsCompatMode compatMode_ = ga::GraphicsCompatMode::Auto;
  bool smoothDamping_ = true, autoDarkBasemap_ = true, terrain3d_ = false;
+ bool compatTelemetrySent_ = false;
+ QNetworkAccessManager *telemetryNet_ = nullptr;
  ga::HardwareInfo hwInfo_;
  ga::ResolvedGraphicsConfig gfxConfig_;
  QTimer autosave_;
@@ -280,6 +283,8 @@ private:
  void redoAction();
  void applyHardwareProfile();
  void persistPreferences();
+ void copySystemDiagnostics();
+ void sendCompatTelemetry(const QString &fallbackReason = {}, int glError = 0);
  void showCommandPalette();
  void applySolarLiveFromUi();
  void showSettings();

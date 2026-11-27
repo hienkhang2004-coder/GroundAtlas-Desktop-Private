@@ -35,6 +35,7 @@ public:
   bool imperialUnits = false;
   bool contextStyle = true;
   ga::PerfTier perfTier = ga::PerfTier::Auto;
+  ga::GraphicsCompatMode compatMode = ga::GraphicsCompatMode::Auto;
   bool smoothDamping = true;
   bool autoDarkBasemap = true;
   bool terrain3d = false;
@@ -42,7 +43,8 @@ public:
  SettingsDialog(const Values &initial,
                 const ga::HardwareInfo &hardware,
                 std::function<void(const Values &)> onApply,
-                QWidget *parent = nullptr);
+                QWidget *parent = nullptr,
+                std::function<QString()> buildDiagnosticText = {});
 };
 
 class CommandPaletteDialog : public QDialog {

@@ -646,6 +646,14 @@ export function renderAdminHtml(): string {
     <h3>Danh sách License Keys</h3>
     <table><thead><tr><th>Key</th><th>Email</th><th>Seats</th><th>Swap</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="licBody"></tbody></table>
   </div>
+
+  <div class="card" id="gpuCard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+      <h3 style="margin:0;">Sức khỏe GPU &amp; Tương thích phần cứng (Telemetry ẩn danh)</h3>
+      <span id="gpuSummary" class="status-pill">0 thiết bị</span>
+    </div>
+    <table><thead><tr><th>GPU · OpenGL</th><th>Bản</th><th>Chế độ</th><th>Màn hình / RAM</th><th>gl_error</th><th>Watchdog</th><th>Cập nhật</th></tr></thead><tbody id="gpuBody"></tbody></table>
+  </div>
 </div>
 
 <script>
@@ -675,6 +683,27 @@ async function loadOverview() {
     tr.querySelector('[data-act="reset"]').onclick = () => resetSeats(l.id);
     tr.querySelector('[data-act="toggle"]').onclick = () => toggleRevoke(l.id, nextSt);
     tb.appendChild(tr);
+  }
+  const gh = d.gpu_health || { total_devices: 0, healthy_devices: 0, fallback_devices: 0, error_devices: 0, devices: [] };
+  document.getElementById('gpuSummary').textContent = gh.healthy_devices + ' ổn định · ' + gh.fallback_devices + ' tự hạ chế độ · ' + gh.error_devices + ' lỗi GL';
+  const gb = document.getElementById('gpuBody');
+  gb.innerHTML = '';
+  if (!gh.devices || gh.devices.length === 0) {
+    gb.innerHTML = '<tr><td colspan="7" style="color:var(--muted);">Chưa có dữ liệu telemetry GPU từ bản v2.3.3 trở lên.</td></tr>';
+  } else {
+    for (const g of gh.devices) {
+      const tr = document.createElement('tr');
+      const dt = g.updated_at ? new Date(g.updated_at * 1000).toLocaleString('vi-VN') : '—';
+      const errColor = Number(g.gl_error || 0) !== 0 ? '#f87171' : (g.fallback_reason ? '#fbbf24' : '#34d399');
+      tr.innerHTML = '<td><strong>' + esc(g.gpu_renderer || 'Unknown') + '</strong><div style="font-size:11px;color:var(--muted);">' + esc(g.gl_version || '') + '</div></td>'
+        + '<td><code>' + esc(g.app_version || '') + '</code></td>'
+        + '<td>' + esc(g.compat_mode || 'auto') + ' · ' + esc(g.effective_tier || '') + '</td>'
+        + '<td>' + Number(g.dpi_percent || 100) + '% · ' + Number(g.display_hz || 60) + 'Hz · ' + Number(g.ram_gb || 0) + 'GB</td>'
+        + '<td style="color:' + errColor + ';font-weight:600;">' + Number(g.gl_error || 0) + '</td>'
+        + '<td>' + esc(g.fallback_reason || 'OK') + '</td>'
+        + '<td style="color:var(--muted);font-size:12px;">' + esc(dt) + '</td>';
+      gb.appendChild(tr);
+    }
   }
 }
 

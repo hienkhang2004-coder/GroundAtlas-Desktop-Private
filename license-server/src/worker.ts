@@ -513,6 +513,64 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
     return json(await computePricing(env, mh), 200, cors);
   }
 
+  // ── POST /v1/telemetry/compat (Anonymous GPU / OpenGL compatibility health beacon) ──
+  if (request.method === "POST" && path === "/v1/telemetry/compat") {
+    const rl = await checkRateLimit(env, ip, "telemetry_compat", 30, 600);
+    if (!rl.allowed) return json({ error: "RATE_LIMITED" }, 429, { "Retry-After": String(rl.retryAfter), ...cors });
+    const body = (await request.json().catch(() => ({}))) as {
+      machine_hash?: string;
+      app_version?: string;
+      gpu_renderer?: string;
+      gl_version?: string;
+      compat_mode?: string;
+      effective_tier?: string;
+      fallback_reason?: string;
+      gl_error?: number;
+      dpi_percent?: number;
+      display_hz?: number;
+      ram_gb?: number;
+    };
+    const mh = String(body.machine_hash || "").trim().toLowerCase();
+    if (!isValidMachineHash(mh)) return json({ error: "INVALID_MACHINE_HASH" }, 400, cors);
+    const ver = String(body.app_version || "2.3.3").trim().slice(0, 32);
+    const gpu = String(body.gpu_renderer || "Unknown").trim().slice(0, 140);
+    const glVer = String(body.gl_version || "").trim().slice(0, 80);
+    const cMode = String(body.compat_mode || "auto").trim().slice(0, 24);
+    const tier = String(body.effective_tier || "medium").trim().slice(0, 24);
+    const reason = String(body.fallback_reason || "").trim().slice(0, 100);
+    const glErr = Math.max(0, Math.min(99999, Math.trunc(Number(body.gl_error || 0))));
+    const dpiPct = Math.max(50, Math.min(400, Math.trunc(Number(body.dpi_percent || 100))));
+    const hz = Math.max(30, Math.min(500, Math.trunc(Number(body.display_hz || 60))));
+    const ram = Math.max(1, Math.min(1024, Math.trunc(Number(body.ram_gb || 8))));
+    const ts = nowSec();
+    try {
+      await env.DB.prepare(
+        `CREATE TABLE IF NOT EXISTS gpu_telemetry (
+          machine_hash TEXT PRIMARY KEY, app_version TEXT NOT NULL, gpu_renderer TEXT NOT NULL,
+          gl_version TEXT NOT NULL DEFAULT '', compat_mode TEXT NOT NULL DEFAULT 'auto',
+          effective_tier TEXT NOT NULL DEFAULT 'medium', fallback_reason TEXT NOT NULL DEFAULT '',
+          gl_error INTEGER NOT NULL DEFAULT 0, dpi_percent INTEGER NOT NULL DEFAULT 100,
+          display_hz INTEGER NOT NULL DEFAULT 60, ram_gb INTEGER NOT NULL DEFAULT 8, updated_at INTEGER NOT NULL
+        )`
+      ).run();
+      await env.DB.prepare(
+        `INSERT INTO gpu_telemetry
+          (machine_hash, app_version, gpu_renderer, gl_version, compat_mode, effective_tier, fallback_reason, gl_error, dpi_percent, display_hz, ram_gb, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(machine_hash) DO UPDATE SET
+          app_version=excluded.app_version, gpu_renderer=excluded.gpu_renderer, gl_version=excluded.gl_version,
+          compat_mode=excluded.compat_mode, effective_tier=excluded.effective_tier, fallback_reason=excluded.fallback_reason,
+          gl_error=excluded.gl_error, dpi_percent=excluded.dpi_percent, display_hz=excluded.display_hz,
+          ram_gb=excluded.ram_gb, updated_at=excluded.updated_at`
+      )
+        .bind(mh, ver, gpu, glVer, cMode, tier, reason, glErr, dpiPct, hz, ram, ts)
+        .run();
+    } catch {
+      // Never fail client telemetry calls
+    }
+    return json({ ok: true, recorded_at: ts }, 200, cors);
+  }
+
   // ── POST /v1/activate (1 Seat = 1 Machine enforcement + Ed25519 Signed Lease Token) ──
   if (request.method === "POST" && path === "/v1/activate") {
     const rl = await checkRateLimit(env, ip, "activate", 15, 600);
@@ -856,12 +914,46 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
       const { results: recentOrders } = await env.DB.prepare(
         "SELECT * FROM orders ORDER BY created_at DESC LIMIT 50"
       ).all();
+      let gpuHealth: {
+        total_devices: number;
+        healthy_devices: number;
+        fallback_devices: number;
+        error_devices: number;
+        devices: unknown[];
+      } = { total_devices: 0, healthy_devices: 0, fallback_devices: 0, error_devices: 0, devices: [] };
+      try {
+        const { results: gpus } = await env.DB.prepare(
+          "SELECT machine_hash, app_version, gpu_renderer, gl_version, compat_mode, effective_tier, fallback_reason, gl_error, dpi_percent, display_hz, ram_gb, updated_at FROM gpu_telemetry ORDER BY updated_at DESC LIMIT 60"
+        ).all<{
+          fallback_reason?: string;
+          gl_error?: number;
+          compat_mode?: string;
+        }>();
+        let healthy = 0, fallback = 0, errors = 0;
+        for (const g of gpus) {
+          const hasErr = Number(g.gl_error || 0) !== 0;
+          const hasFb = Boolean(g.fallback_reason) || g.compat_mode === "raster" || g.compat_mode === "software";
+          if (hasErr) errors += 1;
+          else if (hasFb) fallback += 1;
+          else healthy += 1;
+        }
+        gpuHealth = {
+          total_devices: gpus.length,
+          healthy_devices: healthy,
+          fallback_devices: fallback,
+          error_devices: errors,
+          devices: gpus,
+        };
+      } catch {
+        // Table not yet created on older DBs — return empty summary safely
+      }
       return json({
         pricing,
         revenue_vnd: Number(revRow?.revenue ?? 0),
         paid_orders: Number(revRow?.paid_orders ?? 0),
         licenses,
         orders: recentOrders,
+        gpu_health: gpuHealth,
       });
     }
 

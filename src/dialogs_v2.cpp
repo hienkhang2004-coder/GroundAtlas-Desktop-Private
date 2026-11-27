@@ -1,7 +1,9 @@
 #include "dialogs_v2.h"
 #include "exporter.h"
 #include "uxmotion.h"
+#include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QComboBox>
 #include <QEvent>
 #include <QFrame>
@@ -262,25 +264,26 @@ ExportStudioDialog::ExportStudioDialog(const QString &siteName,
 SettingsDialog::SettingsDialog(const Values &initial,
                                const ga::HardwareInfo &hardware,
                                std::function<void(const Values &)> onApply,
-                               QWidget *parent) : QDialog(parent) {
+                               QWidget *parent,
+                               std::function<QString()> buildDiagnosticText) : QDialog(parent) {
  const bool en = initial.english;
- setWindowTitle(bi(en, "Cài đặt Hiệu năng & Không gian làm việc — GroundAtlas", "Performance & Workspace Settings — GroundAtlas"));
- resize(520, 510);
+ setWindowTitle(bi(en, "Cài đặt Hiệu năng, Tương thích GPU & Giao diện — GroundAtlas", "Performance, GPU Compatibility & Workspace Settings — GroundAtlas"));
+ resize(560, 610);
 
  auto *root = new QVBoxLayout(this);
  root->setContentsMargins(20, 18, 20, 16);
  root->setSpacing(10);
 
- // Hardware Auto-Detection Banner Card
+ // Hardware Auto-Detection Banner Card + 1-Click Diagnostics Copy
  auto *hwCard = new QFrame(this);
  hwCard->setObjectName("v2-card");
  auto *hwLay = new QVBoxLayout(hwCard);
  hwLay->setContentsMargins(12, 10, 12, 10);
- hwLay->setSpacing(4);
+ hwLay->setSpacing(6);
  auto *hwHead = new QHBoxLayout();
  auto *hwEyebrow = new QLabel(bi(en, "PHẦN CỨNG & MÀN HÌNH TỰ NHẬN DIỆN", "AUTO-DETECTED HARDWARE & DISPLAY"), hwCard);
  hwEyebrow->setObjectName("eyebrow");
- auto *hzBadge = new QLabel(QString("%1 Hz").arg(hardware.displayHz), hwCard);
+ auto *hzBadge = new QLabel(QString("%1 Hz · %2%").arg(hardware.displayHz).arg(qRound(hardware.dpiScale * 100.0)), hwCard);
  hzBadge->setObjectName("ready-badge");
  hwHead->addWidget(hwEyebrow);
  hwHead->addStretch();
@@ -290,9 +293,38 @@ SettingsDialog::SettingsDialog(const Values &initial,
  hwSummary->setObjectName("muted");
  hwSummary->setWordWrap(true);
  hwLay->addWidget(hwSummary);
+ if (buildDiagnosticText) {
+  auto *diagRow = new QHBoxLayout();
+  auto *copyDiagBtn = new QPushButton(bi(en, "Sao chép chẩn đoán hệ thống (Hỗ trợ kỹ thuật)", "Copy System Diagnostics (Support)"), hwCard);
+  copyDiagBtn->setObjectName("copy-diagnostics");
+  connect(copyDiagBtn, &QPushButton::clicked, this, [copyDiagBtn, buildDiagnosticText, en] {
+   const QString txt = buildDiagnosticText();
+   if (auto *cb = QApplication::clipboard()) cb->setText(txt);
+   copyDiagBtn->setText(bi(en, "✓ Đã sao chép thông tin phần cứng!", "✓ Diagnostics copied to clipboard!"));
+  });
+  diagRow->addWidget(copyDiagBtn);
+  diagRow->addStretch();
+  hwLay->addLayout(diagRow);
+ }
  root->addWidget(hwCard);
 
- auto *perfLbl = new QLabel(bi(en, "CHẾ ĐỘ ĐỒ HỌA & HIỆU NĂNG (TỐI ĐA 500 Hz)", "GRAPHICS & PERFORMANCE PROFILE (UP TO 500 Hz)"), this);
+ auto *compatLbl = new QLabel(bi(en, "CHẾ ĐỘ TƯƠNG THÍCH ĐỒ HỌA (MỌI CẤU HÌNH MÁY)", "GRAPHICS COMPATIBILITY MODE (ALL PC CONFIGURATIONS)"), this);
+ compatLbl->setObjectName("section");
+ auto *compatBox = new QComboBox(this);
+ compatBox->setObjectName("compat-mode");
+ for (auto cm : {ga::GraphicsCompatMode::Auto, ga::GraphicsCompatMode::HighPerformance,
+                 ga::GraphicsCompatMode::Compatible, ga::GraphicsCompatMode::RasterSafe,
+                 ga::GraphicsCompatMode::SoftwareSafe}) {
+  compatBox->addItem(ga::compatModeName(cm, en), int(cm));
+ }
+ compatBox->setCurrentIndex(std::max(0, compatBox->findData(int(initial.compatMode))));
+ auto *compatHint = new QLabel(bi(en,
+  "• Tự động: tự đo GPU & tự cứu khi gặp lỗi màn hình đen. Đổi sang Software OpenGL sẽ áp dụng ở lần mở app kế tiếp.",
+  "• Auto: probes real GPU capabilities & self-heals black-screen driver bugs. Software OpenGL takes effect on next restart."), this);
+ compatHint->setObjectName("muted");
+ compatHint->setWordWrap(true);
+
+ auto *perfLbl = new QLabel(bi(en, "MỨC CHẤT LƯỢNG & TẦN SỐ QUÉT (TỐI ĐA 500 Hz)", "QUALITY & REFRESH PROFILE (UP TO 500 Hz)"), this);
  perfLbl->setObjectName("section");
  auto *perfBox = new QComboBox(this);
  for (auto tier : {ga::PerfTier::Auto, ga::PerfTier::Low, ga::PerfTier::Medium, ga::PerfTier::Ultra}) {
@@ -340,6 +372,9 @@ SettingsDialog::SettingsDialog(const Values &initial,
  auto *ctxCheck = new QCheckBox(bi(en, "Đồng bộ phong cách bối cảnh bản đồ ngoài ranh", "Style vector basemap context outside site"), this);
  ctxCheck->setChecked(initial.contextStyle);
 
+ root->addWidget(compatLbl);
+ root->addWidget(compatBox);
+ root->addWidget(compatHint);
  root->addWidget(perfLbl);
  root->addWidget(perfBox);
  root->addWidget(themeLbl);
@@ -357,13 +392,14 @@ SettingsDialog::SettingsDialog(const Values &initial,
  auto *okBtn = new QPushButton(bi(en, "Áp dụng & Lưu cấu hình", "Apply & Save"), this);
  okBtn->setProperty("accent", true);
  connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
- connect(okBtn, &QPushButton::clicked, this, [this, themeBox, langBox, unitBox, ctxCheck, perfBox, dampingCheck, darkMapCheck, terrainCheck, onApply] {
+ connect(okBtn, &QPushButton::clicked, this, [this, themeBox, langBox, unitBox, ctxCheck, perfBox, compatBox, dampingCheck, darkMapCheck, terrainCheck, onApply] {
   Values v;
   v.darkTheme = themeBox->currentData().toBool();
   v.english = langBox->currentData().toBool();
   v.imperialUnits = unitBox->currentData().toBool();
   v.contextStyle = ctxCheck->isChecked();
   v.perfTier = static_cast<ga::PerfTier>(perfBox->currentData().toInt());
+  v.compatMode = static_cast<ga::GraphicsCompatMode>(compatBox->currentData().toInt());
   v.smoothDamping = dampingCheck->isChecked();
   v.autoDarkBasemap = darkMapCheck->isChecked();
   v.terrain3d = terrainCheck->isChecked();

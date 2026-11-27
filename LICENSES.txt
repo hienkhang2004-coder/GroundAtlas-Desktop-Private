@@ -35,3 +35,8 @@ THIRD-PARTY OPEN-SOURCE LIBRARIES & DATA ATTRIBUTIONS
 6. SketchUp C API Integration
    Direct .SKP import loads the user's locally installed SketchUpAPI.dll at runtime.
    No Trimble proprietary binaries are redistributed with GroundAtlas Desktop.
+
+7. Mesa 3D LLVMpipe Software OpenGL (opengl32sw.dll) — MIT License
+   Copyright (C) 1999-2024 Mesa 3D contributors (prebuilt via The Qt Project).
+   Used strictly as an automatic Safe Mode fallback on systems lacking OpenGL 3.3 hardware drivers.
+   https://mesa3d.org/license.html

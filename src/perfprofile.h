@@ -1,5 +1,6 @@
 #pragma once
 #include <QByteArray>
+#include <QJsonObject>
 #include <QString>
 
 class QWidget;
@@ -13,14 +14,46 @@ enum class PerfTier {
  Ultra = 3,
 };
 
+// 4-tier universal hardware compatibility mode across NVIDIA, AMD, Intel, VM & RDP
+enum class GraphicsCompatMode {
+ Auto = 0,            // Auto-probe GPU capabilities + self-healing Watchdog
+ HighPerformance = 1, // Discrete GPU · 4x MSAA · OpenGL 3.3 Compatibility
+ Compatible = 2,      // Intel/AMD older iGPU · 0x MSAA · No SSAO · 1024px shadow
+ RasterSafe = 3,      // Pure QPainter XYZ raster basemap (zero MapLibre GLSL)
+ SoftwareSafe = 4,    // Mesa Software OpenGL (opengl32sw.dll · runs on OpenGL 1.1 / VM / RDP)
+};
+
+struct BootSafetyState {
+ bool safeModeForcedByCli = false;
+ bool safeModeTriggeredByCrash = false;
+ int consecutiveCrashes = 0;
+ GraphicsCompatMode requestedMode = GraphicsCompatMode::Auto;
+ GraphicsCompatMode effectiveBootMode = GraphicsCompatMode::Auto;
+ QString reason;
+
+ bool useSoftwareOpenGL() const { return effectiveBootMode == GraphicsCompatMode::SoftwareSafe; }
+ bool forceRasterBasemap() const { return effectiveBootMode == GraphicsCompatMode::RasterSafe; }
+ bool disableMsaaAndSsao() const {
+  return effectiveBootMode == GraphicsCompatMode::Compatible ||
+         effectiveBootMode == GraphicsCompatMode::RasterSafe ||
+         effectiveBootMode == GraphicsCompatMode::SoftwareSafe;
+ }
+ int desiredMsaaSamples() const { return disableMsaaAndSsao() ? 0 : 4; }
+};
+
 struct HardwareInfo {
  QString gpuRenderer;
  int cpuThreads = 4;
  int ramGb = 8;
  int displayHz = 60;
  PerfTier recommendedTier = PerfTier::Medium;
+ QString glVersion;
+ double dpiScale = 1.0;
+ int maxTextureSize = 4096;
+ int maxMsaaSamples = 4;
 
  QString summary(bool english) const;
+ QString diagnosticReport(const QJsonObject &diag, GraphicsCompatMode activeCompat, bool english) const;
 };
 
 struct ResolvedGraphicsConfig {
@@ -39,6 +72,7 @@ struct AppPreferences {
  bool imperialUnits = false;
  bool contextStyle = true;
  PerfTier perfTier = PerfTier::Auto;
+ GraphicsCompatMode compatMode = GraphicsCompatMode::Auto;
  bool smoothDamping = true;
  bool autoDarkBasemap = true;
  bool terrain3d = false;
@@ -47,9 +81,22 @@ struct AppPreferences {
  QByteArray windowGeometry;
 };
 
-HardwareInfo probeHardware(const QString &gpuRenderer, const QWidget *window = nullptr);
-ResolvedGraphicsConfig resolveGraphicsConfig(PerfTier requested, const HardwareInfo &hw);
+HardwareInfo probeHardware(const QString &gpuRenderer, const QWidget *window = nullptr,
+                           const QString &glVersion = {}, int maxTex = 4096, int maxSamples = 4);
+ResolvedGraphicsConfig resolveGraphicsConfig(PerfTier requested, const HardwareInfo &hw,
+                                             GraphicsCompatMode compatMode = GraphicsCompatMode::Auto);
 QString perfTierName(PerfTier tier, bool english);
+QString compatModeName(GraphicsCompatMode mode, bool english);
+QString compatModeId(GraphicsCompatMode mode);
+
+bool softwareOpenGLDllAvailable(const QString &exeDir = {});
+QString crashSentinelPath(const QString &dataDirectory);
+BootSafetyState beginGraphicsBoot(const QString &dataDirectory, GraphicsCompatMode savedMode,
+                                  bool cliSafeMode, bool cliCompatMode, bool cliRasterMode,
+                                  const QString &exeDir = {});
+void markGraphicsBootHealthy(const QString &dataDirectory);
+void setGlobalBootSafety(const BootSafetyState &state);
+const BootSafetyState &globalBootSafety();
 
 bool shouldPersistPreferences(const QString &dataDirectory);
 AppPreferences loadAppPreferences(const QString &dataDirectory);

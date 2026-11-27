@@ -18,6 +18,7 @@ class LocalD1 {
     this.db = new DatabaseSync(":memory:");
     this.db.exec(fs.readFileSync(path.join(root, "migrations/0001_init.sql"), "utf8"));
     this.db.exec(fs.readFileSync(path.join(root, "migrations/0002_security_hardening.sql"), "utf8"));
+    this.db.exec(fs.readFileSync(path.join(root, "migrations/0003_gpu_telemetry.sql"), "utf8"));
   }
   prepare(sql) {
     const stmt = this.db.prepare(sql);
@@ -228,4 +229,41 @@ const evilCorsRes = await handleRequest(
 );
 assert.equal(evilCorsRes.headers.get("Access-Control-Allow-Origin"), null);
 
-console.log("ALL 18 HARDENED LICENSE-SERVER END-TO-END SECURITY TESTS PASSED 100%!");
+// 19. GPU COMPATIBILITY TELEMETRY: records anonymous GPU health & surfaces on Admin Hub overview
+r = await call("POST", "/v1/telemetry/compat", {
+  machine_hash: m1,
+  app_version: "2.3.3",
+  gpu_renderer: "AMD Radeon(TM) Graphics",
+  gl_version: "4.6.0 Compatibility Profile",
+  compat_mode: "compatible",
+  effective_tier: "low",
+  fallback_reason: "mapcanvas-black-frame-detected",
+  gl_error: 0,
+  dpi_percent: 125,
+  display_hz: 165,
+  ram_gb: 16,
+});
+assert.equal(r.status, 200);
+assert.equal(r.data.ok, true);
+r = await call("POST", "/v1/telemetry/compat", {
+  machine_hash: m2,
+  app_version: "2.3.3",
+  gpu_renderer: "NVIDIA GeForce RTX 3060/PCIe/SSE2",
+  gl_version: "4.6.0 NVIDIA",
+  compat_mode: "auto",
+  effective_tier: "ultra",
+  fallback_reason: "",
+  gl_error: 0,
+  dpi_percent: 100,
+  display_hz: 144,
+  ram_gb: 32,
+});
+assert.equal(r.status, 200);
+r = await call("GET", "/v1/admin/overview", null, { Authorization: "Bearer test_admin_secret_999" });
+assert.equal(r.status, 200);
+assert.equal(r.data.gpu_health.total_devices, 2);
+assert.equal(r.data.gpu_health.healthy_devices, 1);
+assert.equal(r.data.gpu_health.fallback_devices, 1);
+assert.equal(r.data.gpu_health.error_devices, 0);
+
+console.log("ALL 19 HARDENED LICENSE-SERVER + GPU TELEMETRY TESTS PASSED 100%!");

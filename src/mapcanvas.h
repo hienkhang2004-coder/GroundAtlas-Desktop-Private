@@ -3,11 +3,14 @@
 #include "planpainter.h"
 #include <QOpenGLWidget>
 #include <QOpenGLVertexArrayObject>
+#include <QCache>
+#include <QSet>
 #include <QTimer>
 #include <QVector>
 #include <QRectF>
 #include <memory>
 namespace QMapLibre {class Map;}
+class QNetworkAccessManager;
 class QTimer;
 
 class MapCanvas:public QOpenGLWidget {
@@ -24,6 +27,8 @@ public:
  bool darkUi()const{return darkUi_;}
  void setBasemapMode(const QString &mode);
  QString basemapMode()const{return basemapMode_;}
+ void setForceRasterFallback(bool enabled);
+ bool usingRasterFallback()const{return useRasterFallback_;}
  void setHanoiPlanning(bool enabled,const QString &layerId=QStringLiteral("qhpk"),double opacity=0.78);
  bool hanoiPlanningEnabled()const{return hanoiPlanEnabled_;}
  QString hanoiPlanningLayer()const{return hanoiPlanLayer_;}
@@ -55,6 +60,7 @@ signals:
  void hanoiPlanningToggled(bool enabled);
  void cityJumpRequested(double lat,double lon,QString name);
  void loadSiteRequested();
+ void compatFallbackTriggered(QString reason,int glError);
 protected:
  void initializeGL()override;
  void resizeGL(int,int)override;
@@ -86,6 +92,13 @@ private:
  QOpenGLVertexArrayObject vectorVao_;
  QTimer *loadingTimer_=nullptr;
  unsigned vectorGlError_=0;
+ int consecutiveGlErrors_=0;
+ bool forceRasterFallback_=false,useRasterFallback_=false,blackProbeDone_=false;
+ QString watchdogReason_;
+ QNetworkAccessManager *rasterNet_=nullptr;
+ QCache<QString,QImage> rasterTiles_{160};
+ QSet<QString> rasterPending_;
+ QSet<QString> rasterFailed_;
  QJsonObject originalStyle_;
  QImage siteOverlay_,hudBuffer_;
  QSize lastVectorSize_,lastVectorPixelSize_;
@@ -114,6 +127,9 @@ private:
  void applyVectorStyle();
  void loadStyleForMode();
  void syncHanoiPlanningLayer();
+ void engageRasterFallback(const QString &reason,int glError=0);
+ void drawRasterFallback(QPainter &painter);
+ void requestRasterTile(const QString &key,const QString &url,const QString &fallbackUrl={});
  void drawGeometry(QPainter &painter);
  void drawSelection(QPainter &painter);
  void drawHud(QPainter &painter);

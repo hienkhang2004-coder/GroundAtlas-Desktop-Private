@@ -24,6 +24,7 @@
 #include <QApplication>
 #include <QButtonGroup>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QDesktopServices>
@@ -43,6 +44,10 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QSettings>
 #include <QLocale>
 #include <QMenu>
 #include <QMenuBar>
@@ -102,10 +107,28 @@ MainWindow::MainWindow(QString directory, QString path, QWidget *parent)
  // Load persisted preferences (isolated from test temp directories)
  const auto prefs = ga::loadAppPreferences(dataDirectory_);
  perfTier_ = prefs.perfTier;
+ compatMode_ = prefs.compatMode;
  smoothDamping_ = prefs.smoothDamping;
  autoDarkBasemap_ = prefs.autoDarkBasemap;
  terrain3d_ = prefs.terrain3d;
  imperialUnits_ = prefs.imperialUnits;
+ const auto &boot = ga::globalBootSafety();
+ if (map_) {
+  map_->setForceRasterFallback(compatMode_ == ga::GraphicsCompatMode::RasterSafe || boot.forceRasterBasemap());
+ }
+ if (boot.safeModeTriggeredByCrash) {
+  QTimer::singleShot(1800, this, [this] {
+   showToast(trText("Phát hiện lỗi driver GPU ở lần mở trước · Đã tự bật Chế độ Tương thích an toàn",
+                    "Previous GPU driver crash detected · Safe Compatibility Mode enabled automatically"),
+             QColor("#d97706"), 6000);
+  });
+ } else if (boot.safeModeForcedByCli) {
+  QTimer::singleShot(1800, this, [this, boot] {
+   showToast(trText("Đang chạy Chế độ đồ họa An toàn: ", "Running in Safe Graphics Mode: ") +
+                 ga::compatModeName(boot.effectiveBootMode, english_),
+             QColor("#0284c7"), 4500);
+  });
+ }
  if (prefs.darkTheme) setDarkTheme(true);
  if (prefs.english) language_->setCurrentIndex(1);
  if (!prefs.windowGeometry.isEmpty()) restoreGeometry(prefs.windowGeometry);
@@ -307,7 +330,7 @@ void MainWindow::buildUi() {
  connect(sourceAction, &QAction::triggered, this, &MainWindow::showSource);
  connect(about, &QAction::triggered, this, [this] {
   QMessageBox::about(this, "GroundAtlas Desktop",
-   trText("GroundAtlas Native 2.3.2 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
+   trText("GroundAtlas Native 2.3.3 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
           "Kiến trúc thuần mã máy (0% WebView/Electron) tự tối ưu theo phần cứng tới 500 Hz.\n"
           "• Bản quyền Per-Seat (1 Seat = 1 Máy · Lifetime 2.x · Ký số Ed25519 + Windows DPAPI + Offline 14 ngày).\n"
           "• Tự động kiểm tra & thông báo phiên bản cập nhật mới (miễn phí trọn đời dòng 2.x).\n"
@@ -315,7 +338,7 @@ void MainWindow::buildUi() {
           "• Lớp bật/tắt 1-Click Quy hoạch sử dụng đất (hỗ trợ nguồn XYZ tùy chỉnh) đè trên Bản đồ, 2D & 3D.\n"
           "• Nhập mô hình 3D trực tiếp từ SketchUp (.skp, .dae, .obj, .glb, .stl), đổ bóng 4096px, mặt cắt A–A' sống, Concept Massing FAR/BCR, và xuất Bộ hồ sơ 8 tệp 1-Click.\n\n"
           "Xem chi tiết bản quyền thư viện nguồn mở (Qt 6.8 LGPLv3, MapLibre BSD, Monocypher, OSM ODbL) tại mục Thông tin → Giấy phép nguồn mở.",
-          "GroundAtlas Native 2.3.2 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
+          "GroundAtlas Native 2.3.3 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
           "Pure compiled C++ workstation (0% WebView/Electron) with hardware auto-profiling up to 500 Hz.\n"
           "• Commercial Per-Seat Licensing (1 Seat = 1 Machine · Lifetime 2.x · Ed25519 + Windows DPAPI + 14-day offline lease).\n"
           "• Fast global OSM site loading (OSM API v0.6 + auto 2×2 tiling + Overpass failover).\n"
@@ -2798,7 +2821,25 @@ void MainWindow::buildUi() {
  connect(viewport_, &Viewport::graphicsReady, this, [this](const QString &r) {
   statusText_->setToolTip(r);
   applyHardwareProfile();
+  QTimer::singleShot(3000, this, [this] {
+   const auto &boot = ga::globalBootSafety();
+   sendCompatTelemetry(boot.reason, 0);
+  });
  });
+ connect(viewport_, &Viewport::compatFallbackTriggered, this, [this](const QString &reason, int glErr) {
+  showToast(trText("Đã tự động tối ưu đồ họa tương thích cho card màn hình của máy bạn.",
+                   "Automatically switched to compatible graphics mode for your GPU."),
+            QColor("#0284c7"), 5000);
+  sendCompatTelemetry(reason, glErr);
+ });
+ if (map_) {
+  connect(map_, &MapCanvas::compatFallbackTriggered, this, [this](const QString &reason, int glErr) {
+   showToast(trText("Bản đồ đã tự chuyển sang Chế độ Tương thích Phổ quát (hết đen nền).",
+                    "Map switched to Universal Compatible Raster Mode automatically."),
+             QColor("#0284c7"), 5000);
+   sendCompatTelemetry(reason, glErr);
+  });
+ }
 
  rebuildIcons();
  setLanguage(false);
@@ -3235,7 +3276,7 @@ void MainWindow::markModified() {
 }
 
 void MainWindow::syncTitle() {
- setWindowTitle((modified_ ? "● " : "") + project_.site.name + " — GroundAtlas Native 2.3.2");
+ setWindowTitle((modified_ ? "● " : "") + project_.site.name + " — GroundAtlas Native 2.3.3");
 }
 
 bool MainWindow::maybeSave() {
@@ -3643,7 +3684,7 @@ void MainWindow::showUpdateDialog(bool userInitiated) {
  if (!license_) return;
  if (userInitiated) license_->bootstrap();
  const auto &off = license_->offer();
- const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.2") : QCoreApplication::applicationVersion();
+ const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.3") : QCoreApplication::applicationVersion();
  const bool hasUpdate = off.isUpdateAvailable(curVer);
 
  if (!hasUpdate) {
@@ -3694,7 +3735,7 @@ bool MainWindow::requireProFeature(const QString &viName, const QString &enName)
 void MainWindow::syncLicenseUi() {
  if (!licensePillBtn_ || !license_) return;
  const auto &off = license_->offer();
- const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.2") : QCoreApplication::applicationVersion();
+ const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.3") : QCoreApplication::applicationVersion();
  const bool hasUpdate = off.isUpdateAvailable(curVer);
  if (updatePillBtn_) {
   updatePillBtn_->setVisible(hasUpdate);
@@ -3749,8 +3790,15 @@ void MainWindow::syncLicenseUi() {
 }
 
 void MainWindow::applyHardwareProfile() {
- hwInfo_ = ga::probeHardware(viewport_ ? viewport_->renderer() : QString(), this);
- gfxConfig_ = ga::resolveGraphicsConfig(perfTier_, hwInfo_);
+ hwInfo_ = ga::probeHardware(viewport_ ? viewport_->renderer() : QString(), this,
+                             viewport_ ? viewport_->glVersion() : QString(),
+                             viewport_ ? viewport_->maxTextureSize() : 4096,
+                             viewport_ ? viewport_->maxMsaaSamples() : 4);
+ const auto &boot = ga::globalBootSafety();
+ const ga::GraphicsCompatMode activeCompat = (compatMode_ == ga::GraphicsCompatMode::Auto && boot.effectiveBootMode != ga::GraphicsCompatMode::Auto)
+  ? boot.effectiveBootMode
+  : compatMode_;
+ gfxConfig_ = ga::resolveGraphicsConfig(perfTier_, hwInfo_, activeCompat);
  const int tickMs = std::clamp(int(std::floor(1000.0 / std::clamp(gfxConfig_.targetFps, 60, 500))), 1, 16);
  sunAnimTimer_.setInterval(tickMs);
  if (viewport_) {
@@ -3759,12 +3807,21 @@ void MainWindow::applyHardwareProfile() {
   viewport_->setSmoothDamping(smoothDamping_ && ga::shouldPersistPreferences(dataDirectory_));
   viewport_->setTerrain3d(terrain3d_, ga::appDataPath("environment"));
  }
+ if (map_) {
+  map_->setForceRasterFallback(activeCompat == ga::GraphicsCompatMode::RasterSafe);
+ }
  if (terrain3dCheck_) {
   const QSignalBlocker b(terrain3dCheck_);
   terrain3dCheck_->setChecked(terrain3d_);
  }
  if (offlineText_) {
-  const QString tierLbl = (gfxConfig_.effectiveTier == ga::PerfTier::Ultra) ? "Ultra" : (gfxConfig_.effectiveTier == ga::PerfTier::Low ? "Low" : "Balanced");
+  const QString tierLbl = (activeCompat == ga::GraphicsCompatMode::SoftwareSafe)
+   ? "Safe SW"
+   : (activeCompat == ga::GraphicsCompatMode::RasterSafe
+      ? "Compat Map"
+      : (activeCompat == ga::GraphicsCompatMode::Compatible
+         ? "Compat GPU"
+         : ((gfxConfig_.effectiveTier == ga::PerfTier::Ultra) ? "Ultra" : (gfxConfig_.effectiveTier == ga::PerfTier::Low ? "Low" : "Balanced"))));
   offlineText_->setText(QString("C++20 · %1 · %2 Hz").arg(tierLbl).arg(gfxConfig_.targetFps));
  }
 }
@@ -3776,6 +3833,7 @@ void MainWindow::persistPreferences() {
  p.imperialUnits = imperialUnits_;
  p.contextStyle = contextStyle_ ? contextStyle_->isChecked() : true;
  p.perfTier = perfTier_;
+ p.compatMode = compatMode_;
  p.smoothDamping = smoothDamping_;
  p.autoDarkBasemap = autoDarkBasemap_;
  p.terrain3d = terrain3d_;
@@ -3783,6 +3841,60 @@ void MainWindow::persistPreferences() {
  p.studioDrawerOpen = !studioDrawer_ || studioDrawer_->isOpen();
  p.windowGeometry = saveGeometry();
  ga::saveAppPreferences(dataDirectory_, p);
+}
+
+void MainWindow::copySystemDiagnostics() {
+ hwInfo_ = ga::probeHardware(viewport_ ? viewport_->renderer() : QString(), this,
+                             viewport_ ? viewport_->glVersion() : QString(),
+                             viewport_ ? viewport_->maxTextureSize() : 4096,
+                             viewport_ ? viewport_->maxMsaaSamples() : 4);
+ const QString report = hwInfo_.diagnosticReport(diagnostics(), compatMode_, english_);
+ if (auto *cb = QApplication::clipboard()) cb->setText(report);
+ showToast(trText("Đã sao chép thông tin chẩn đoán GPU & hệ thống vào Clipboard!",
+                  "System & GPU diagnostics copied to clipboard!"),
+           QColor("#16a34a"), 2800);
+}
+
+void MainWindow::sendCompatTelemetry(const QString &fallbackReason, int glError) {
+ if (!ga::shouldPersistPreferences(dataDirectory_) || !license_) return;
+ const bool isEvent = !fallbackReason.isEmpty() || glError != 0;
+ const QString appVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.3") : QCoreApplication::applicationVersion();
+ if (!isEvent) {
+  if (compatTelemetrySent_) return;
+  QSettings s("GroundAtlas", "GroundAtlasDesktop");
+  if (s.value("telemetry/lastVersion").toString() == appVer) {
+   compatTelemetrySent_ = true;
+   return;
+  }
+  s.setValue("telemetry/lastVersion", appVer);
+ }
+ compatTelemetrySent_ = true;
+ const QString base = license_->serverUrl().trimmed();
+ if (!base.startsWith(QStringLiteral("http"))) return;
+ if (!telemetryNet_) telemetryNet_ = new QNetworkAccessManager(this);
+ const auto &boot = ga::globalBootSafety();
+ const ga::GraphicsCompatMode activeCompat = (compatMode_ == ga::GraphicsCompatMode::Auto && boot.effectiveBootMode != ga::GraphicsCompatMode::Auto)
+  ? boot.effectiveBootMode
+  : compatMode_;
+ const QString tierLbl = (gfxConfig_.effectiveTier == ga::PerfTier::Ultra) ? QStringLiteral("ultra") : (gfxConfig_.effectiveTier == ga::PerfTier::Low ? QStringLiteral("low") : QStringLiteral("medium"));
+ const QJsonObject payload{
+  {"machine_hash", ga::machineFingerprint()},
+  {"app_version", appVer},
+  {"gpu_renderer", hwInfo_.gpuRenderer.left(140)},
+  {"gl_version", hwInfo_.glVersion.left(80)},
+  {"compat_mode", ga::compatModeId(activeCompat)},
+  {"effective_tier", tierLbl},
+  {"fallback_reason", fallbackReason.left(100)},
+  {"gl_error", glError},
+  {"dpi_percent", qRound(hwInfo_.dpiScale * 100.0)},
+  {"display_hz", hwInfo_.displayHz},
+  {"ram_gb", hwInfo_.ramGb},
+ };
+ QNetworkRequest req{QUrl(base + QStringLiteral("/v1/telemetry/compat"))};
+ req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+ req.setTransferTimeout(6000);
+ auto *reply = telemetryNet_->post(req, QJsonDocument(payload).toJson(QJsonDocument::Compact));
+ connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }
 
 void MainWindow::pushUndoState() {
@@ -3875,9 +3987,10 @@ void MainWindow::showCommandPalette() {
  entries.append({trText("Bật / Tắt Mặt cắt trực tiếp A–A' trên Viewport", "Toggle Live Section Cut A–A'"), "Cut A-A'", catTool, "live section mat cat truc tiep a-a", [this] { if (geographic_) showArchitecturalView(viewport_->camera()); viewport_->setSectionCutActive(!viewport_->isSectionCutActive()); }});
  entries.append({trText("Đổi Giao diện Sáng / Tối", "Toggle Light / Dark Theme"), "Theme", catTool, "dark light toi sang giao dien", [this] { setDarkTheme(!darkTheme_); persistPreferences(); }});
  entries.append({trText("Quản lý Bản quyền (Per-Seat) & Kích hoạt Key", "License & Per-Seat Activation"), "PRO 2.x", catTool, "license key pro seat ban quyen kich hoat", [this] { showLicenseDialog(); }});
- entries.append({trText("Kiểm tra bản cập nhật mới", "Check for Updates"), "v2.3.2", catTool, "update cap nhat phien ban moi", [this] { showUpdateDialog(true); }});
+ entries.append({trText("Kiểm tra bản cập nhật mới", "Check for Updates"), "v2.3.3", catTool, "update cap nhat phien ban moi", [this] { showUpdateDialog(true); }});
  entries.append({trText("Giấy phép Nguồn mở & Dữ liệu", "Open-Source & Data Licenses"), "LGPL/BSD", catTool, "oss license lgpl bsd odbl", [this] { showOpenSourceLicenses(); }});
- entries.append({trText("Cài đặt Hiệu năng & Màn hình (tới 500 Hz)", "Performance & Display Settings"), "Auto/Low/Med/Ultra", catTool, "settings cai dat hieu nang fps hz gpu", [this] { showSettings(); }});
+ entries.append({trText("Cài đặt Hiệu năng, Tương thích GPU & Màn hình", "Performance, GPU Compatibility & Display Settings"), "Auto/Compat/Safe", catTool, "settings cai dat hieu nang fps hz gpu tuong thich safe mode", [this] { showSettings(); }});
+ entries.append({trText("Sao chép thông tin chẩn đoán hệ thống (GPU / OpenGL)", "Copy System & GPU Diagnostics"), "Diagnostics", catTool, "diagnostics chan doan gpu opengl copy bug ho tro", [this] { copySystemDiagnostics(); }});
  entries.append({trText("Bật / Tắt Địa hình 3D DEM", "Toggle 3D DEM Terrain"), "GEDTM30", catTool, "terrain dia hinh dem 3d", [this] { if (terrain3dCheck_) terrain3dCheck_->toggle(); }});
  entries.append({trText("Hoàn tác (Undo)", "Undo"), "Ctrl+Z", catTool, "undo hoan tac", [this] { undoAction(); }});
  entries.append({trText("Làm lại (Redo)", "Redo"), "Ctrl+Y", catTool, "redo lam lai", [this] { redoAction(); }});
@@ -3901,10 +4014,15 @@ void MainWindow::showCommandPalette() {
 }
 
 void MainWindow::showSettings() {
- hwInfo_ = ga::probeHardware(viewport_ ? viewport_->renderer() : QString(), this);
- SettingsDialog::Values init{darkTheme_, english_, imperialUnits_, contextStyle_->isChecked(), perfTier_, smoothDamping_, autoDarkBasemap_, terrain3d_};
- SettingsDialog dlg(init, hwInfo_, [this](const SettingsDialog::Values &v) {
+ hwInfo_ = ga::probeHardware(viewport_ ? viewport_->renderer() : QString(), this,
+                             viewport_ ? viewport_->glVersion() : QString(),
+                             viewport_ ? viewport_->maxTextureSize() : 4096,
+                             viewport_ ? viewport_->maxMsaaSamples() : 4);
+ const auto prevCompat = compatMode_;
+ SettingsDialog::Values init{darkTheme_, english_, imperialUnits_, contextStyle_->isChecked(), perfTier_, compatMode_, smoothDamping_, autoDarkBasemap_, terrain3d_};
+ SettingsDialog dlg(init, hwInfo_, [this, prevCompat](const SettingsDialog::Values &v) {
   perfTier_ = v.perfTier;
+  compatMode_ = v.compatMode;
   smoothDamping_ = v.smoothDamping;
   autoDarkBasemap_ = v.autoDarkBasemap;
   terrain3d_ = v.terrain3d;
@@ -3915,8 +4033,22 @@ void MainWindow::showSettings() {
   applyHardwareProfile();
   persistPreferences();
   syncInspector(viewport_->selected());
-  showToast(trText("Đã lưu cấu hình: ", "Saved profile: ") + ga::perfTierName(gfxConfig_.effectiveTier, english_), QColor("#16a34a"), 2400);
- }, this);
+  const bool needsRestart = (prevCompat == ga::GraphicsCompatMode::SoftwareSafe) != (compatMode_ == ga::GraphicsCompatMode::SoftwareSafe) ||
+                            (prevCompat == ga::GraphicsCompatMode::Compatible) != (compatMode_ == ga::GraphicsCompatMode::Compatible);
+  if (needsRestart) {
+   showToast(trText("Đã lưu chế độ đồ họa · Mở lại ứng dụng để áp dụng đầy đủ OpenGL mới.",
+                    "Graphics mode saved · Reopen app to fully apply new OpenGL backend."),
+             QColor("#0284c7"), 4500);
+  } else {
+   showToast(trText("Đã lưu cấu hình: ", "Saved profile: ") + ga::perfTierName(gfxConfig_.effectiveTier, english_), QColor("#16a34a"), 2400);
+  }
+ }, this, [this] {
+  hwInfo_ = ga::probeHardware(viewport_ ? viewport_->renderer() : QString(), this,
+                              viewport_ ? viewport_->glVersion() : QString(),
+                              viewport_ ? viewport_->maxTextureSize() : 4096,
+                              viewport_ ? viewport_->maxMsaaSamples() : 4);
+  return hwInfo_.diagnosticReport(diagnostics(), compatMode_, english_);
+ });
  dlg.exec();
 }
 
@@ -4540,7 +4672,16 @@ void MainWindow::dropEvent(QDropEvent *e) {
 QJsonObject MainWindow::diagnostics() const {
  const auto s = project_.stats();
  return {
-  {"application", "GroundAtlas Desktop"}, {"version", "2.3.2"}, {"native", true}, {"webview", false},
+  {"application", "GroundAtlas Desktop"}, {"version", "2.3.3"}, {"native", true}, {"webview", false},
+ {"compat_mode", ga::compatModeId(compatMode_)},
+ {"boot_safety", QJsonObject{
+  {"effective_mode", ga::compatModeId(ga::globalBootSafety().effectiveBootMode)},
+  {"software_gl", ga::globalBootSafety().useSoftwareOpenGL()},
+  {"crash_triggered", ga::globalBootSafety().safeModeTriggeredByCrash},
+  {"consecutive_crashes", ga::globalBootSafety().consecutiveCrashes},
+  {"reason", ga::globalBootSafety().reason},
+ }},
+ {"gl_version", viewport_->glVersion()}, {"max_texture_size", viewport_->maxTextureSize()}, {"max_msaa_samples", viewport_->maxMsaaSamples()},
   {"qt_version", qVersion()}, {"open_documents", documents_.size()}, {"imports", ga::geoJsonImportSummaries(project_)},
   {"models_3d", models3d_.size()}, {"sketchup_direct_api", ga::sketchUpDirectImportAvailable()},
   {"planning_level", activePlanningLevel_}, {"planning_custom_zones", planningCustom_.zones.size()},

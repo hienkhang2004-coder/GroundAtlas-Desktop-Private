@@ -1,4 +1,5 @@
 #include "mapcanvas.h"
+#include "perfprofile.h"
 #include "planningtiles.h"
 #include "sitegeometry.h"
 #include "planpainter.h"
@@ -6,6 +7,10 @@
 #include "vectorstyle.h"
 #include <QMapLibre/Map>
 #include <QMapLibre/Settings>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QUrl>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QSurfaceFormat>
@@ -63,15 +68,20 @@ MapCanvas::MapCanvas(const QString &directory,QWidget *parent):QOpenGLWidget(par
  interactionIdle_.setSingleShot(true);interactionIdle_.setInterval(120);connect(&interactionIdle_,&QTimer::timeout,this,[this]{interacting_=false;overlayDirty_=true;hudDirty_=true;update();if(deferredNavSync_){deferredNavSync_=false;emit navigationChanged();emit viewChanged();}});
  auto surface=QSurfaceFormat::defaultFormat();
  surface.setStencilBufferSize(8);
- surface.setVersion(3,3);
+ if(!ga::globalBootSafety().useSoftwareOpenGL()){
+  surface.setVersion(3,3);
 #ifdef Q_OS_MACOS
- surface.setProfile(QSurfaceFormat::CoreProfile);
+  surface.setProfile(QSurfaceFormat::CoreProfile);
 #else
- surface.setProfile(QSurfaceFormat::CompatibilityProfile);
+  surface.setProfile(QSurfaceFormat::CompatibilityProfile);
 #endif
+ }
  surface.setSamples(0); // Single-sampled FBO for 100% Intel/AMD/NVIDIA QMapLibre reliability
  setFormat(surface);
- loadingTimer_=new QTimer(this);loadingTimer_->setSingleShot(true);loadingTimer_->setInterval(25000);connect(loadingTimer_,&QTimer::timeout,this,[this]{if(!fullyRendered_&&mapError_.isEmpty()){mapError_=english_?"Some basemap resources are still loading.":"Một số thành phần nền bản đồ vẫn đang tải.";hudDirty_=true;emit message(mapError_);update();}});
+ forceRasterFallback_=ga::globalBootSafety().forceRasterBasemap();
+ useRasterFallback_=forceRasterFallback_;
+ if(useRasterFallback_)watchdogReason_=QStringLiteral("compat-mode-raster");
+ loadingTimer_=new QTimer(this);loadingTimer_->setSingleShot(true);loadingTimer_->setInterval(25000);connect(loadingTimer_,&QTimer::timeout,this,[this]{if(!fullyRendered_&&!useRasterFallback_){if(mapError_.isEmpty())mapError_=english_?"Some basemap resources are still loading.":"Một số thành phần nền bản đồ vẫn đang tải.";engageRasterFallback(QStringLiteral("basemap-timeout"),0);}});
  setMouseTracking(true);setFocusPolicy(Qt::StrongFocus);setMinimumSize(360,300);setAccessibleName("Native vector geographic map");
  QFile file(ga::appDataPath("basemap/positron.json"));if(file.open(QIODevice::ReadOnly))originalStyle_=QJsonDocument::fromJson(file.readAll()).object();
 }
@@ -99,10 +109,140 @@ void MapCanvas::setBasemapMode(const QString &mode){
  if(basemapMode_==normalized)return;
  basemapMode_=normalized;
  hudDirty_=true;
+ rasterFailed_.clear();
  loadStyleForMode();
  update();
  emit basemapModeChanged(basemapMode_);
  emit viewChanged();
+}
+void MapCanvas::setForceRasterFallback(bool enabled){
+ if(forceRasterFallback_==enabled&&useRasterFallback_==enabled)return;
+ forceRasterFallback_=enabled;
+ useRasterFallback_=enabled;
+ if(enabled){
+  watchdogReason_=QStringLiteral("user-raster-mode");
+  loadingTimer_->stop();
+ }else{
+  watchdogReason_.clear();
+  consecutiveGlErrors_=0;
+  blackProbeDone_=false;
+  if(vector_)loadStyleForMode();
+ }
+ hudDirty_=true;
+ update();
+}
+void MapCanvas::engageRasterFallback(const QString &reason,int glError){
+ if(useRasterFallback_)return;
+ useRasterFallback_=true;
+ watchdogReason_=reason;
+ loadingTimer_->stop();
+ hudDirty_=true;
+ emit compatFallbackTriggered(reason,glError);
+ emit message(english_
+  ?"Switched map to Universal Compatible Raster Mode for your GPU/network."
+  :"Đã tự chuyển bản đồ sang chế độ Tương thích Phổ quát (chống đen nền) cho máy bạn.");
+ update();
+}
+void MapCanvas::requestRasterTile(const QString &key,const QString &url,const QString &fallbackUrl){
+ if(rasterTiles_.contains(key)||rasterPending_.contains(key)||rasterFailed_.contains(key))return;
+ if(url.startsWith(QStringLiteral("file:///"))){
+  const QString localPath=QUrl(url).toLocalFile();
+  QImage img(localPath);
+  if(!img.isNull())rasterTiles_.insert(key,new QImage(img));
+  else rasterFailed_.insert(key);
+  return;
+ }
+ if(!rasterNet_)rasterNet_=new QNetworkAccessManager(this);
+ rasterPending_.insert(key);
+ QNetworkRequest req{QUrl(url)};
+ req.setRawHeader("User-Agent","GroundAtlasDesktop/2.3.3 (+https://groundatlas.groundatlas.workers.dev)");
+ req.setTransferTimeout(10000);
+ auto *reply=rasterNet_->get(req);
+ connect(reply,&QNetworkReply::finished,this,[this,reply,key,fallbackUrl]{
+  rasterPending_.remove(key);
+  const auto err=reply->error();
+  const auto data=reply->readAll();
+  reply->deleteLater();
+  if(err==QNetworkReply::NoError&&!data.isEmpty()){
+   QImage img;
+   if(img.loadFromData(data)){
+    rasterTiles_.insert(key,new QImage(img));
+    update();
+    return;
+   }
+  }
+  if(!fallbackUrl.isEmpty()){
+   requestRasterTile(key,fallbackUrl,{});
+  }else{
+   rasterFailed_.insert(key);
+  }
+ });
+}
+void MapCanvas::drawRasterFallback(QPainter &painter){
+ // Pure QPainter XYZ Slippy Map renderer — 100% immune to OpenGL/MapLibre shader bugs!
+ painter.save();
+ const QColor bg=darkUi_?QColor("#17191d"):QColor("#f2f1ed");
+ painter.fillRect(rect(),bg);
+ // Crisp subtle architectural grid underneath so screen is NEVER blank even offline
+ painter.setPen(QPen(darkUi_?QColor(255,255,255,14):QColor(0,0,0,14),1.0));
+ for(int gx=0;gx<width();gx+=64)painter.drawLine(gx,0,gx,height());
+ for(int gy=0;gy<height();gy+=64)painter.drawLine(0,gy,width(),gy);
+
+ const int z=std::clamp(int(std::floor(zoom_)),2,18);
+ const int n=1<<z;
+ const double scale=std::pow(2.0,zoom_-double(z));
+ const double tilePx=256.0*scale;
+ const QPointF ctr=world(lon_,lat_,zoom_);
+ const double leftW=ctr.x()-width()*0.5;
+ const double topW=ctr.y()-height()*0.5;
+ const int minTx=int(std::floor(leftW/tilePx))-1;
+ const int maxTx=int(std::floor((leftW+width())/tilePx))+1;
+ const int minTy=std::clamp(int(std::floor(topW/tilePx))-1,0,n-1);
+ const int maxTy=std::clamp(int(std::floor((topW+height())/tilePx))+1,0,n-1);
+ const QString styleTag=(basemapMode_=="satellite")?QStringLiteral("sat"):(darkUi_?QStringLiteral("dark"):QStringLiteral("light"));
+ const bool drawPlan=hanoiPlanEnabled_;
+ const auto planInfo=ga::hanoiPlanningLayerInfo(hanoiPlanLayer_);
+ const QString planTpl=drawPlan?ga::hanoiPlanningTileTemplate(hanoiPlanLayer_):QString();
+
+ painter.setRenderHint(QPainter::SmoothPixmapTransform,true);
+ for(int ty=minTy;ty<=maxTy;++ty){
+  for(int tx=minTx;tx<=maxTx;++tx){
+   const int wx=((tx%n)+n)%n;
+   const QRectF dst(tx*tilePx-leftW,ty*tilePx-topW,tilePx+0.6,tilePx+0.6);
+   const QString key=QStringLiteral("%1/%2/%3/%4").arg(styleTag).arg(z).arg(wx).arg(ty);
+   if(const QImage *img=rasterTiles_.object(key)){
+    painter.drawImage(dst,*img);
+   }else{
+    QString u,fb;
+    if(basemapMode_=="satellite"){
+     u=QStringLiteral("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%1/%2/%3").arg(z).arg(ty).arg(wx);
+    }else if(darkUi_){
+     u=QStringLiteral("https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/%1/%2/%3").arg(z).arg(ty).arg(wx);
+     fb=QStringLiteral("https://tile.openstreetmap.org/%1/%2/%3.png").arg(z).arg(wx).arg(ty);
+    }else{
+     u=QStringLiteral("https://tile.openstreetmap.org/%1/%2/%3.png").arg(z).arg(wx).arg(ty);
+     fb=QStringLiteral("https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/%1/%2/%3").arg(z).arg(ty).arg(wx);
+    }
+    requestRasterTile(key,u,fb);
+   }
+   if(drawPlan&&z>=planInfo.minZoom&&z<=planInfo.maxZoom&&!planTpl.isEmpty()){
+    const QString pKey=QStringLiteral("plan:%1/%2/%3/%4").arg(hanoiPlanLayer_).arg(z).arg(wx).arg(ty);
+    if(const QImage *pImg=rasterTiles_.object(pKey)){
+     painter.save();
+     painter.setOpacity(hanoiPlanOpacity_);
+     painter.drawImage(dst,*pImg);
+     painter.restore();
+    }else{
+     QString pUrl=planTpl;
+     pUrl.replace(QStringLiteral("{z}"),QString::number(z));
+     pUrl.replace(QStringLiteral("{x}"),QString::number(wx));
+     pUrl.replace(QStringLiteral("{y}"),QString::number(ty));
+     requestRasterTile(pKey,pUrl,{});
+    }
+   }
+  }
+ }
+ painter.restore();
 }
 void MapCanvas::setHanoiPlanning(bool enabled,const QString &layerId,double opacity){
  const QString norm=ga::normalizePlanningLayerId(layerId);
@@ -164,7 +304,7 @@ void MapCanvas::initializeGL(){
  vector_=std::make_unique<QMapLibre::Map>(nullptr,settings,size(),devicePixelRatioF());
  lastVectorSize_=size();
  connect(vector_.get(),&QMapLibre::Map::needsRendering,this,QOverload<>::of(&MapCanvas::update));
- connect(vector_.get(),&QMapLibre::Map::mapLoadingFailed,this,[this](QMapLibre::Map::MapLoadingFailure,const QString &reason){mapError_=reason;hudDirty_=true;emit message(english_?"Basemap temporarily unavailable; loaded site data is retained.":"Chưa nạp được nền bản đồ; dữ liệu khu đất vẫn được giữ.");update();});
+ connect(vector_.get(),&QMapLibre::Map::mapLoadingFailed,this,[this](QMapLibre::Map::MapLoadingFailure,const QString &reason){mapError_=reason;hudDirty_=true;if(!useRasterFallback_&&reason.contains("style",Qt::CaseInsensitive)){engageRasterFallback(QStringLiteral("maplibre-style-failed"),0);}else{emit message(english_?"Basemap temporarily unavailable; loaded site data is retained.":"Chưa nạp được nền bản đồ; dữ liệu khu đất vẫn được giữ.");update();}});
  connect(vector_.get(),&QMapLibre::Map::mapChanged,this,[this](QMapLibre::Map::MapChange change){
   if(change==QMapLibre::Map::MapChangeDidFinishLoadingStyle){styleReady_=true;mapError_.clear();hudDirty_=true;if(basemapMode_=="vector")applyVectorStyle();syncHanoiPlanningLayer();}
   if(change==QMapLibre::Map::MapChangeDidFinishRenderingMapFullyRendered||change==QMapLibre::Map::MapChangeDidFinishRenderingFrameFullyRendered){const bool nextReady=vector_->isFullyLoaded();if(nextReady!=fullyRendered_){fullyRendered_=nextReady;hudDirty_=true;}if(fullyRendered_){if(!mapError_.isEmpty()){mapError_.clear();hudDirty_=true;}loadingTimer_->stop();}}
@@ -181,7 +321,7 @@ void MapCanvas::resizeGL(int,int){
 void MapCanvas::syncVectorView(){overlayDirty_=true;hudDirty_=true;fullyRendered_=false;if(vector_){mapError_.clear();if(!interacting_)loadingTimer_->start();vector_->setCoordinateZoom({lat_,lon_},zoom_-1);vector_->setBearing(0);vector_->setPitch(0);}update();}
 void MapCanvas::setContextEnabled(bool value){if(contextEnabled_==value)return;contextEnabled_=value;if(basemapMode_=="vector")applyVectorStyle();update();emit viewChanged();}
 void MapCanvas::applyVectorStyle(){if(!vector_||!styleReady_||basemapMode_!="vector")return;fullyRendered_=false;loadingTimer_->start();if(originalStyle_.isEmpty())originalStyle_=QJsonDocument::fromJson(vector_->styleJson().toUtf8()).object();const auto styled=ga::restyleContext(originalStyle_,layers_,palette_.paper.name(),contextEnabled_);const auto originalLayers=originalStyle_["layers"].toArray(),styledLayers=styled["layers"].toArray();for(int i=0;i<originalLayers.size()&&i<styledLayers.size();++i){const auto original=originalLayers[i].toObject(),changed=styledLayers[i].toObject();const auto id=original["id"].toString();for(const auto &key:ga::contextPaintProperties(original)){const auto value=changed["paint"].toObject()[key];if(!vector_->setPaintProperty(id,key,value.toVariant()))mapError_="A basemap paint property could not be applied.";}}}
-QJsonObject MapCanvas::basemapDiagnostics()const{return{{"provider",basemapMode_=="satellite"?"Esri World Imagery":"OpenFreeMap / OpenMapTiles / OpenStreetMap"},{"basemap_mode",basemapMode_},{"renderer_engine","MapLibre Native for Qt 3.0.0"},{"renderer",renderer_},{"native",true},{"webview",false},{"gl_error",int(vectorGlError_)},{"gl_profile",context()?int(context()->format().profile()):-1},{"style_loaded",styleReady_},{"fully_rendered",fullyRendered_},{"context_styling",contextEnabled_},{"style_layers",originalStyle_["layers"].toArray().size()},{"error",mapError_},{"view",view()}};}
+QJsonObject MapCanvas::basemapDiagnostics()const{return{{"provider",useRasterFallback_?(basemapMode_=="satellite"?"Esri World Imagery (Raster Fallback)":"OpenStreetMap / Esri (Universal Raster Fallback)"):(basemapMode_=="satellite"?"Esri World Imagery":"OpenFreeMap / OpenMapTiles / OpenStreetMap")},{"basemap_mode",basemapMode_},{"renderer_engine",useRasterFallback_?"QPainter Universal Raster Fallback":"MapLibre Native for Qt 3.0.0"},{"raster_fallback",useRasterFallback_},{"watchdog_reason",watchdogReason_},{"renderer",renderer_},{"native",true},{"webview",false},{"gl_error",int(vectorGlError_)},{"gl_profile",context()?int(context()->format().profile()):-1},{"style_loaded",styleReady_||useRasterFallback_},{"fully_rendered",fullyRendered_||useRasterFallback_},{"context_styling",contextEnabled_},{"style_layers",originalStyle_["layers"].toArray().size()},{"error",mapError_},{"view",view()}};}
 QPointF MapCanvas::world(double lon,double lat,double z)const{const double size=256*std::pow(2,z),s=std::sin(std::clamp(lat,-85.05112878,85.05112878)*M_PI/180);return{(lon+180)/360*size,(.5-std::log((1+s)/(1-s))/(4*M_PI))*size};}
 QPointF MapCanvas::unworld(const QPointF &p,double z)const{const double size=256*std::pow(2,z);double lon=p.x()/size*360-180;lon=std::remainder(lon,360.);return{lon,std::clamp(std::atan(std::sinh(M_PI*(1-2*p.y()/size)))*180/M_PI,-85.,85.)};}
 QPointF MapCanvas::screen(double lon,double lat)const{auto delta=world(lon,lat,zoom_)-world(lon_,lat_,zoom_);delta.setX(std::remainder(delta.x(),256*std::pow(2,zoom_)));return delta+QPointF(width()/2.,height()/2.);}
@@ -227,7 +367,7 @@ void MapCanvas::paintGL(){
  gl->glViewport(0,0,pixelSize.width(),pixelSize.height());
  gl->glClearColor(darkUi_?.09f:.95f,darkUi_?.10f:.95f,darkUi_?.12f:.93f,1.0f);
  gl->glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
- if(vector_){
+ if(vector_&&!useRasterFallback_){
   for(int i=0;i<8&&gl->glGetError()!=GL_NO_ERROR;++i){}
   if(vectorVao_.isCreated())vectorVao_.bind();
   if(size()!=lastVectorSize_){vector_->resize(size());lastVectorSize_=size();}
@@ -239,6 +379,29 @@ void MapCanvas::paintGL(){
   vector_->render();
   vectorGlError_=gl->glGetError();
   if(vectorVao_.isCreated())vectorVao_.release();
+  // Live self-healing Watchdog: auto-detect GL errors or solid-black GPU failure on light vector maps
+  if(vectorGlError_!=0){
+   if(++consecutiveGlErrors_>=2){
+    engageRasterFallback(QStringLiteral("mapcanvas-gl-error-%1").arg(vectorGlError_),int(vectorGlError_));
+   }
+  }else{
+   consecutiveGlErrors_=0;
+   if(!blackProbeDone_&&fullyRendered_&&basemapMode_=="vector"&&!darkUi_&&
+      pixelSize.width()>=64&&pixelSize.height()>=64){
+    blackProbeDone_=true;
+    const int w=pixelSize.width(),h=pixelSize.height();
+    const int pts[5][2]={{w/10,h/10},{w*9/10,h/10},{w/10,h*9/10},{w*9/10,h*9/10},{w/2,h/10}};
+    int blackCount=0;
+    for(const auto &pt:pts){
+     unsigned char px[4]={255,255,255,255};
+     gl->glReadPixels(pt[0],pt[1],1,1,GL_RGBA,GL_UNSIGNED_BYTE,px);
+     if(px[0]<=3&&px[1]<=3&&px[2]<=3)++blackCount;
+    }
+    if(blackCount==5){
+     engageRasterFallback(QStringLiteral("mapcanvas-black-frame-detected"),0);
+    }
+   }
+  }
   gl->glUseProgram(0);
   gl->glActiveTexture(GL_TEXTURE0);
   gl->glBindTexture(GL_TEXTURE_2D,0);
@@ -252,6 +415,9 @@ void MapCanvas::paintGL(){
   gl->glPixelStorei(GL_UNPACK_ALIGNMENT,4);
  }
  p.endNativePainting();
+ if(useRasterFallback_||!vector_){
+  drawRasterFallback(p);
+ }
 
  // Skip off-screen or empty site overlay allocation & upload completely (huge zoom perf win)
  if(overlayDirty_||(hasSiteOverlay_&&siteOverlay_.size()!=pixelSize)){
@@ -398,9 +564,9 @@ void MapCanvas::drawHud(QPainter &ui){
  ui.setBrush(glassBg);
  ui.drawRoundedRect(topCard,12.0,12.0);
 
- // Status indicator dot (emerald ready / amber loading)
+ // Status indicator dot (emerald ready / sky blue compatible raster / amber loading)
  ui.setPen(Qt::NoPen);
- ui.setBrush(fullyRendered_?QColor("#16a34a"):QColor("#f59e0b"));
+ ui.setBrush(useRasterFallback_?QColor("#0284c7"):(fullyRendered_?QColor("#16a34a"):QColor("#f59e0b")));
  ui.drawEllipse(QPointF(28.0,30.0),4.0,4.0);
 
  ui.setFont(QFont("Segoe UI",9,QFont::DemiBold));
@@ -410,9 +576,11 @@ void MapCanvas::drawHud(QPainter &ui){
 
  ui.setFont(QFont("Segoe UI",7.5,QFont::Medium));
  ui.setPen(textMuted);
- const QString modeTag=basemapMode_=="satellite"
-  ?(english_?"ESRI SATELLITE IMAGERY":"ẢNH VỆ TINH TOÀN CẦU")
-  :(fullyRendered_?(english_?"GLOBAL VECTOR BASEMAP":"NỀN VECTOR TOÀN CẦU"):(english_?"VECTOR BASEMAP · LOADING":"NỀN VECTOR · ĐANG TẢI"));
+ const QString modeTag=useRasterFallback_
+  ?(basemapMode_=="satellite"?(english_?"COMPATIBLE SATELLITE MAP":"ẢNH VỆ TINH · TƯƠNG THÍCH"):(english_?"UNIVERSAL COMPATIBLE MAP (CPU)":"BẢN ĐỒ TƯƠNG THÍCH (CPU)"))
+  :(basemapMode_=="satellite"
+   ?(english_?"ESRI SATELLITE IMAGERY":"ẢNH VỆ TINH TOÀN CẦU")
+   :(fullyRendered_?(english_?"GLOBAL VECTOR BASEMAP":"NỀN VECTOR TOÀN CẦU"):(english_?"VECTOR BASEMAP · LOADING":"NỀN VECTOR · ĐANG TẢI")));
  ui.drawText(QRectF(26.0,40.0,cardW-38.0,18.0),Qt::AlignLeft|Qt::AlignVCenter,
   modeTag+QString(" · z%1").arg(zoom_,0,'f',1));
 
