@@ -1,6 +1,6 @@
-﻿; GroundAtlas Desktop 2.3.1 — Windows x64 Single-File Installer (Inno Setup 6)
+﻿; GroundAtlas Desktop 2.3.2 — Windows x64 Single-File Installer (Inno Setup 6)
 #define MyAppName "GroundAtlas Desktop"
-#define MyAppVersion "2.3.1"
+#define MyAppVersion "2.3.2"
 #define MyAppPublisher "GroundAtlas"
 #define MyAppExeName "GroundAtlas.exe"
 
@@ -18,7 +18,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..
-OutputBaseFilename=GroundAtlas-Desktop-2.3.1-Setup
+OutputBaseFilename=GroundAtlas-Desktop-2.3.2-Setup
 SetupIconFile=..\assets\groundatlas.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
@@ -28,11 +28,11 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 LZMAUseSeparateProcess=yes
 ChangesAssociations=yes
-VersionInfoVersion=2.3.1.0
+VersionInfoVersion=2.3.2.0
 VersionInfoCompany=GroundAtlas
-VersionInfoDescription=GroundAtlas Desktop 2.3.1 Setup (Native C++20 / OpenGL 3.3 / Spectrum UI / Hanoi & Ha Long CVDD 2025 Planning / Satellite 2D & 3D)
+VersionInfoDescription=GroundAtlas Desktop 2.3.2 Setup (Native C++20 / OpenGL 3.3 / Spectrum UI / Hanoi & Ha Long CVDD 2025 Planning / Satellite 2D & 3D)
 VersionInfoProductName=GroundAtlas Desktop
-VersionInfoProductVersion=2.3.1
+VersionInfoProductVersion=2.3.2
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -49,7 +49,7 @@ Name: "desktopicon"; Description: "Tạo biểu tượng trên màn hình Deskto
 Name: "associate"; Description: "Mở file dự án .gatlas bằng GroundAtlas Desktop (Associate .gatlas files)"; GroupDescription: "Tùy chọn bổ sung:"
 
 [Files]
-Source: "..\portable-2.3.1\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\portable-2.3.2\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"

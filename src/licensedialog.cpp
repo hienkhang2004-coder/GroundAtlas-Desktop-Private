@@ -373,8 +373,8 @@ OpenSourceLicensesDialog::OpenSourceLicensesDialog(bool english, bool darkTheme,
  lay->setSpacing(10);
 
  auto *head = new QLabel(QString::fromUtf8(english
-  ? "GroundAtlas Desktop 2.3.1 — Third-Party Software & Map Data Notices"
-  : "GroundAtlas Desktop 2.3.1 — Thông báo Bản quyền Thư viện & Dữ liệu Bản đồ"), this);
+  ? "GroundAtlas Desktop 2.3.2 — Third-Party Software & Map Data Notices"
+  : "GroundAtlas Desktop 2.3.2 — Thông báo Bản quyền Thư viện & Dữ liệu Bản đồ"), this);
  head->setStyleSheet("font-size:14px;font-weight:700;");
  lay->addWidget(head);
 

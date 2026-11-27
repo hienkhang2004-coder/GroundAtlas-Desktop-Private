@@ -33,6 +33,8 @@
 #include <QComboBox>
 #include <QDir>
 #include <QFile>
+#include <QJsonDocument>
+#include <QWheelEvent>
 #include <QFileInfo>
 #include <QLibrary>
 #ifdef Q_OS_WIN
@@ -918,13 +920,91 @@ private slots:
   win.setHanoiPlanning(false);
   win.hide();
  }
+
+ void v232CompatibilityAndZoomOutSafety() {
+  const QString outDir = qEnvironmentVariable("GA_VERIFY_232_DIR");
+  const QString dataDir = QStringLiteral(GA_DATA);
+  ga::loadPresentationCatalog(dataDir + "/presentations.json");
+  QTemporaryDir tmp;
+  QVERIFY(tmp.isValid());
+
+  MainWindow win(tmp.filePath("v232-verify"), dataDir + "/hoankiem.gatlas");
+  win.resize(1480, 920);
+  win.show();
+  QVERIFY(QTest::qWaitForWindowExposed(&win, 5000));
+  QTest::qWait(1500);
+
+  // 1. Viewport NativeBasemap must render with ZERO GL error via offscreen non-MSAA FBO
+  const auto vpDiag0 = win.viewport()->basemapDiagnostics();
+  QVERIFY2(vpDiag0["initialized"].toBool(), "Viewport NativeBasemap did not initialize");
+  QCOMPARE(vpDiag0["gl_error"].toInt(), 0);
+
+  auto *mc = win.findChild<MapCanvas *>();
+  auto *mapAct = win.findChild<QAction *>("map");
+  auto *v2Act = win.findChild<QAction *>("view-2d");
+  auto *v3Act = win.findChild<QAction *>("view-3d");
+  QVERIFY(mc && mapAct && v2Act && v3Act);
+
+  // 2. Switch to Map tab -> TP.HCM -> verify crisp vector basemap & gl_error == 0
+  mapAct->trigger();
+  mc->centerOn(10.7769, 106.7009, 15.8);
+  QTRY_VERIFY_WITH_TIMEOUT(mc->basemapDiagnostics()["style_loaded"].toBool(), 15000);
+  QTest::qWait(1600);
+  const auto mapDiag = mc->basemapDiagnostics();
+  QCOMPARE(mapDiag["gl_error"].toInt(), 0);
+  if (!outDir.isEmpty()) {
+   QDir().mkpath(outDir);
+   mc->grabFramebuffer().save(outDir + "/verify_1_map_hcm.png");
+  }
+
+  // 3. Aggressive wheel zoom-out on MapCanvas (35 ticks off-center) -> verify zoom >= minZoom & lat clamped (no pole/Mongolia detach!)
+  for (int i = 0; i < 35; ++i) {
+   QWheelEvent we(QPointF(220, 180), mc->mapToGlobal(QPointF(220, 180)), QPoint(), QPoint(0, -120),
+                  Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+   QApplication::sendEvent(mc, &we);
+   QTest::qWait(18);
+  }
+  QTest::qWait(1200);
+  const auto mvOut = mc->view();
+  QVERIFY2(mvOut["zoom"].toDouble() >= 2.15, qPrintable(QString("MapCanvas zoom dropped too low: %1").arg(mvOut["zoom"].toDouble())));
+  QVERIFY2(std::abs(mvOut["lat"].toDouble()) < 72.0, qPrintable(QString("MapCanvas lat drifted to pole: %1").arg(mvOut["lat"].toDouble())));
+  QCOMPARE(mc->basemapDiagnostics()["gl_error"].toInt(), 0);
+  if (!outDir.isEmpty()) mc->grabFramebuffer().save(outDir + "/verify_2_map_zoomout.png");
+
+  // 4. Switch to 2D & 3D on HCM -> aggressive wheel zoom-out -> verify zero GL error, bounded zoom, no ocean teleport
+  QVERIFY(win.loadPath(dataDir + "/sites/benthanh-osm.gatlas", false));
+  QTest::qWait(1800);
+  QCOMPARE(win.viewport()->basemapDiagnostics()["gl_error"].toInt(), 0);
+  if (!outDir.isEmpty()) win.viewport()->grabFramebuffer().save(outDir + "/verify_3_hcm_3d.png");
+
+  v2Act->trigger();
+  QTest::qWait(1200);
+  for (int i = 0; i < 45; ++i) {
+   QWheelEvent we(QPointF(260, 200), win.viewport()->mapToGlobal(QPointF(260, 200)), QPoint(), QPoint(0, -120),
+                  Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+   QApplication::sendEvent(win.viewport(), &we);
+   QTest::qWait(18);
+  }
+  QTest::qWait(1200);
+  const auto geo2d = win.viewport()->geographicView();
+  QVERIFY2(geo2d["zoom"].toDouble() >= 2.15, qPrintable(QString("2D zoom too low: %1").arg(geo2d["zoom"].toDouble())));
+  QCOMPARE(win.viewport()->basemapDiagnostics()["gl_error"].toInt(), 0);
+  if (!outDir.isEmpty()) win.viewport()->grabFramebuffer().save(outDir + "/verify_4_2d_zoomout.png");
+
+  win.hide();
+ }
 };
 
 int main(int argc, char **argv) {
  QSurfaceFormat surface;
  surface.setVersion(3, 3);
+#ifdef Q_OS_MACOS
  surface.setProfile(QSurfaceFormat::CoreProfile);
+#else
+ surface.setProfile(QSurfaceFormat::CompatibilityProfile);
+#endif
  surface.setDepthBufferSize(24);
+ surface.setStencilBufferSize(8);
  surface.setSamples(4);
  QSurfaceFormat::setDefaultFormat(surface);
  QApplication app(argc, argv);

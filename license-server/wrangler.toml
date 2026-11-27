@@ -4,9 +4,9 @@ compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-APP_LATEST_VERSION = "2.3.1"
-APP_DOWNLOAD_URL = "https://github.com/hienkhang2004-coder/GroundAtlas/raw/main/GroundAtlas-Desktop-2.3.1-Setup.exe"
-APP_UPDATE_NOTES = "Tự động kiểm tra & thông báo phiên bản mới ngay trong app, hỗ trợ khóa ký offline Ed25519 và tối ưu bộ cài gọn nhẹ."
+APP_LATEST_VERSION = "2.3.2"
+APP_DOWNLOAD_URL = "https://github.com/hienkhang2004-coder/GroundAtlas/raw/main/GroundAtlas-Desktop-2.3.2-Setup.exe"
+APP_UPDATE_NOTES = "Sửa lỗi đen nền bản đồ trên GPU AMD/Intel (OpenGL Compatibility + FBO riêng cho MapLibre), sửa lỗi lem vòng tròn & lệch tâm khi zoom out, làm nét nhãn chữ bản đồ."
 OFFLINE_LEASE_DAYS = "14"
 MAX_SWAPS_PER_180_DAYS = "2"
 WELCOME_OFFER_HOURS = "48"

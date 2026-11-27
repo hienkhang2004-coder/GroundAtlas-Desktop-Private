@@ -1,6 +1,7 @@
 #pragma once
 #include "contextcamera.h"
 #include <QObject>
+#include <QOpenGLFramebufferObject>
 #include <QOpenGLVertexArrayObject>
 #include <QTimer>
 #include <memory>
@@ -15,7 +16,7 @@ public:
  ~NativeBasemap() override;
  void initialize(QSize size,double ratio);
  void release();
- void render(QSize size,double ratio,unsigned framebuffer);
+ void render(QSize size,QSize pixelSize,unsigned framebuffer);
  void setCamera(const ga::ContextCamera &camera);
  void setPresentation(QVector<ga::Layer> layers,ga::Palette palette,bool styleEnabled);
  void setBasemapMode(const QString &mode);
@@ -29,6 +30,9 @@ private:
  QString cacheDirectory_,renderer_,error_,basemapMode_=QStringLiteral("vector");
  QJsonObject originalStyle_;
  std::unique_ptr<QMapLibre::Map> map_;
+ std::unique_ptr<QOpenGLFramebufferObject> fbo_;
+ QSize lastSize_,lastPixelSize_;
+ unsigned lastFbo_=0;
  QOpenGLVertexArrayObject vao_;
  QTimer loading_;
  QVector<ga::Layer> layers_;

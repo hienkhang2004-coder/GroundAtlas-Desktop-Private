@@ -61,7 +61,16 @@ const QVector<CityPreset> &vietnamCities() {
 
 MapCanvas::MapCanvas(const QString &directory,QWidget *parent):QOpenGLWidget(parent),cacheDirectory_(directory){
  interactionIdle_.setSingleShot(true);interactionIdle_.setInterval(120);connect(&interactionIdle_,&QTimer::timeout,this,[this]{interacting_=false;overlayDirty_=true;hudDirty_=true;update();if(deferredNavSync_){deferredNavSync_=false;emit navigationChanged();emit viewChanged();}});
- auto surface=QSurfaceFormat::defaultFormat();surface.setStencilBufferSize(8);surface.setVersion(3,3);surface.setProfile(QSurfaceFormat::CoreProfile);setFormat(surface);
+ auto surface=QSurfaceFormat::defaultFormat();
+ surface.setStencilBufferSize(8);
+ surface.setVersion(3,3);
+#ifdef Q_OS_MACOS
+ surface.setProfile(QSurfaceFormat::CoreProfile);
+#else
+ surface.setProfile(QSurfaceFormat::CompatibilityProfile);
+#endif
+ surface.setSamples(0); // Single-sampled FBO for 100% Intel/AMD/NVIDIA QMapLibre reliability
+ setFormat(surface);
  loadingTimer_=new QTimer(this);loadingTimer_->setSingleShot(true);loadingTimer_->setInterval(25000);connect(loadingTimer_,&QTimer::timeout,this,[this]{if(!fullyRendered_&&mapError_.isEmpty()){mapError_=english_?"Some basemap resources are still loading.":"Một số thành phần nền bản đồ vẫn đang tải.";hudDirty_=true;emit message(mapError_);update();}});
  setMouseTracking(true);setFocusPolicy(Qt::StrongFocus);setMinimumSize(360,300);setAccessibleName("Native vector geographic map");
  QFile file(ga::appDataPath("basemap/positron.json"));if(file.open(QIODevice::ReadOnly))originalStyle_=QJsonDocument::fromJson(file.readAll()).object();
@@ -163,7 +172,12 @@ void MapCanvas::initializeGL(){
  syncVectorView();
  loadStyleForMode();
 }
-void MapCanvas::resizeGL(int,int){overlayDirty_=true;hudDirty_=true;fullyRendered_=false;if(vector_)loadingTimer_->start();}
+void MapCanvas::resizeGL(int,int){
+ overlayDirty_=true;hudDirty_=true;fullyRendered_=false;
+ const double mz=minZoom();
+ if(zoom_<mz){zoom_=mz;lat_=clampCenterLat(lat_,zoom_);if(vector_)syncVectorView();}
+ if(vector_)loadingTimer_->start();
+}
 void MapCanvas::syncVectorView(){overlayDirty_=true;hudDirty_=true;fullyRendered_=false;if(vector_){mapError_.clear();if(!interacting_)loadingTimer_->start();vector_->setCoordinateZoom({lat_,lon_},zoom_-1);vector_->setBearing(0);vector_->setPitch(0);}update();}
 void MapCanvas::setContextEnabled(bool value){if(contextEnabled_==value)return;contextEnabled_=value;if(basemapMode_=="vector")applyVectorStyle();update();emit viewChanged();}
 void MapCanvas::applyVectorStyle(){if(!vector_||!styleReady_||basemapMode_!="vector")return;fullyRendered_=false;loadingTimer_->start();if(originalStyle_.isEmpty())originalStyle_=QJsonDocument::fromJson(vector_->styleJson().toUtf8()).object();const auto styled=ga::restyleContext(originalStyle_,layers_,palette_.paper.name(),contextEnabled_);const auto originalLayers=originalStyle_["layers"].toArray(),styledLayers=styled["layers"].toArray();for(int i=0;i<originalLayers.size()&&i<styledLayers.size();++i){const auto original=originalLayers[i].toObject(),changed=styledLayers[i].toObject();const auto id=original["id"].toString();for(const auto &key:ga::contextPaintProperties(original)){const auto value=changed["paint"].toObject()[key];if(!vector_->setPaintProperty(id,key,value.toVariant()))mapError_="A basemap paint property could not be applied.";}}}
@@ -171,19 +185,49 @@ QJsonObject MapCanvas::basemapDiagnostics()const{return{{"provider",basemapMode_
 QPointF MapCanvas::world(double lon,double lat,double z)const{const double size=256*std::pow(2,z),s=std::sin(std::clamp(lat,-85.05112878,85.05112878)*M_PI/180);return{(lon+180)/360*size,(.5-std::log((1+s)/(1-s))/(4*M_PI))*size};}
 QPointF MapCanvas::unworld(const QPointF &p,double z)const{const double size=256*std::pow(2,z);double lon=p.x()/size*360-180;lon=std::remainder(lon,360.);return{lon,std::clamp(std::atan(std::sinh(M_PI*(1-2*p.y()/size)))*180/M_PI,-85.,85.)};}
 QPointF MapCanvas::screen(double lon,double lat)const{auto delta=world(lon,lat,zoom_)-world(lon_,lat_,zoom_);delta.setX(std::remainder(delta.x(),256*std::pow(2,zoom_)));return delta+QPointF(width()/2.,height()/2.);}
+double MapCanvas::minZoom()const{
+ return std::max(2.2,std::log2(std::max(1,height())/256.0)+0.35);
+}
+double MapCanvas::clampCenterLat(double lat,double z)const{
+ const double clamped=std::clamp(lat,-85.,85.);
+ const double worldSz=256.0*std::pow(2.0,z);
+ const double halfH=std::max(1.0,double(height())*0.5);
+ if(halfH>=worldSz*0.49)return 0.0;
+ const double y=std::clamp(world(0.0,clamped,z).y(),halfH,worldSz-halfH);
+ return std::clamp(unworld({worldSz*0.5,y},z).y(),-85.,85.);
+}
 QPointF MapCanvas::location()const{return{lon_,lat_};}
-void MapCanvas::centerOn(double lat,double lon,double zoom){lat_=std::clamp(lat,-85.,85.);lon_=std::remainder(lon,360.);zoom_=std::clamp(zoom,2.,20.);syncVectorView();emit navigationChanged();emit viewChanged();}
+void MapCanvas::centerOn(double lat,double lon,double zoom){zoom_=std::clamp(zoom,minZoom(),20.);lat_=clampCenterLat(lat,zoom_);lon_=std::remainder(lon,360.);syncVectorView();emit navigationChanged();emit viewChanged();}
 void MapCanvas::setProject(const ga::Project *p){project_=p;planGeometry_={};interactionImage_.clear();planCache_=p?preparePlan(*p,layers_,diagram_):PlanCache();if(p){const double z=std::log2(156543.03392*std::cos(p->site.lat*M_PI/180)*std::max(400,height())/(p->site.radius*2.5));centerOn(p->site.lat,p->site.lon,z);}overlayDirty_=true;hudDirty_=true;update();}
 void MapCanvas::setPresentation(QVector<ga::Layer> layers,ga::Palette p,QString diagram){interactionImage_.clear();layers_=std::move(layers);palette_=std::move(p);diagram_=std::move(diagram);planCache_=project_?preparePlan(*project_,layers_,diagram_):PlanCache();overlayDirty_=true;hudDirty_=true;applyVectorStyle();update();}
 void MapCanvas::beginInteraction(){interacting_=true;interactionIdle_.start();}
-void MapCanvas::zoomBy(double amount){beginInteraction();zoom_=std::clamp(zoom_+amount,2.,20.);syncVectorView();emit navigationChanged();emit viewChanged();}
+void MapCanvas::zoomBy(double amount){beginInteraction();zoom_=std::clamp(zoom_+amount,minZoom(),20.);lat_=clampCenterLat(lat_,zoom_);syncVectorView();emit navigationChanged();emit viewChanged();}
 void MapCanvas::paintGL(){
  QPainter p(this);p.beginNativePainting();
  const double dpr=devicePixelRatioF();
  const QSize pixelSize(qRound(width()*dpr),qRound(height()*dpr));
  if(pixelSize.isEmpty()){p.endNativePainting();return;}
+ auto gl=context()->functions();
+ // ALWAYS clear color/depth/stencil and reset GL state before QMapLibre renders so a
+ // slow/failed GPU frame can NEVER leave black screen or concentric-circle zoom-out trails!
+ gl->glUseProgram(0);
+ gl->glActiveTexture(GL_TEXTURE0);
+ gl->glBindTexture(GL_TEXTURE_2D,0);
+ gl->glBindBuffer(GL_ARRAY_BUFFER,0);
+ gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+ gl->glDisable(GL_SCISSOR_TEST);
+ gl->glDisable(GL_CULL_FACE);
+ gl->glDisable(GL_DEPTH_TEST);
+ gl->glDisable(GL_STENCIL_TEST);
+ gl->glDisable(GL_BLEND);
+ gl->glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+ gl->glDepthMask(GL_TRUE);
+ gl->glStencilMask(0xFF);
+ gl->glPixelStorei(GL_UNPACK_ALIGNMENT,4);
+ gl->glViewport(0,0,pixelSize.width(),pixelSize.height());
+ gl->glClearColor(darkUi_?.09f:.95f,darkUi_?.10f:.95f,darkUi_?.12f:.93f,1.0f);
+ gl->glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
  if(vector_){
-  auto gl=context()->functions();
   for(int i=0;i<8&&gl->glGetError()!=GL_NO_ERROR;++i){}
   if(vectorVao_.isCreated())vectorVao_.bind();
   if(size()!=lastVectorSize_){vector_->resize(size());lastVectorSize_=size();}
@@ -195,10 +239,17 @@ void MapCanvas::paintGL(){
   vector_->render();
   vectorGlError_=gl->glGetError();
   if(vectorVao_.isCreated())vectorVao_.release();
- }else{
-  auto gl=context()->functions();
-  gl->glClearColor(darkUi_?.09f:.95f,darkUi_?.10f:.95f,darkUi_?.12f:.93f,1);
-  gl->glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+  gl->glUseProgram(0);
+  gl->glActiveTexture(GL_TEXTURE0);
+  gl->glBindTexture(GL_TEXTURE_2D,0);
+  gl->glBindBuffer(GL_ARRAY_BUFFER,0);
+  gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+  gl->glDisable(GL_SCISSOR_TEST);
+  gl->glDisable(GL_STENCIL_TEST);
+  gl->glDisable(GL_DEPTH_TEST);
+  gl->glDisable(GL_CULL_FACE);
+  gl->glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
+  gl->glPixelStorei(GL_UNPACK_ALIGNMENT,4);
  }
  p.endNativePainting();
 
@@ -590,13 +641,27 @@ void MapCanvas::mouseMoveEvent(QMouseEvent *e){
  }
  if(drawing_&&freehand_&&(e->buttons()&Qt::LeftButton)){const auto ll=geographicAt(e->position());if(draft_.isEmpty()||QLineF(screen(draft_.last().x(),draft_.last().y()),e->position()).length()>=7.0){draft_.append(ll);hudDirty_=true;emit drawingChanged(true,draft_.size());update();}return;}
  if(draggedVertex_>=0&&e->buttons()&Qt::LeftButton){const auto ll=geographicAt(e->position());candidate_.boundary[draggedVertex_]=ga::localPoint(ll.x(),ll.y(),candidate_);vertexMoved_=true;hudDirty_=true;update();return;}
- if(dragging_&&e->buttons()&Qt::LeftButton){beginInteraction();const auto delta=e->position()-lastMouse_;const auto ll=unworld(world(lon_,lat_,zoom_)-delta,zoom_);lon_=ll.x();lat_=ll.y();lastMouse_=e->position();deferredNavSync_=true;syncVectorView();}
+ if(dragging_&&e->buttons()&Qt::LeftButton){beginInteraction();const auto delta=e->position()-lastMouse_;const auto ll=unworld(world(lon_,lat_,zoom_)-delta,zoom_);lon_=ll.x();lat_=clampCenterLat(ll.y(),zoom_);lastMouse_=e->position();deferredNavSync_=true;syncVectorView();}
 }
 void MapCanvas::mouseReleaseEvent(QMouseEvent *e){dragging_=false;if(hoverHudId_.isEmpty())unsetCursor();if(skipRelease_){skipRelease_=false;return;}if(freehand_){freehand_=false;if(draft_.size()>=5)finishBoundaryDrawing();return;}if(draggedVertex_>=0){draggedVertex_=-1;if(vertexMoved_){QPolygonF vertices;for(const auto &p:candidate_.boundary)vertices.append(ga::geographicPoint(p,candidate_));emit boundaryEdited(vertices);}return;}if(e->button()!=Qt::LeftButton||(e->position()-pressMouse_).manhattanLength()>=4)return;const auto ll=geographicAt(e->position());if(drawing_){if(draft_.isEmpty()||std::hypot(draft_.last().x()-ll.x(),draft_.last().y()-ll.y())>1e-9){draft_.append(ll);hudDirty_=true;emit drawingChanged(true,draft_.size());update();}}else emit sitePicked(ll.y(),ll.x());}
 void MapCanvas::mouseDoubleClickEvent(QMouseEvent *e){if(drawing_&&e->button()==Qt::LeftButton){finishBoundaryDrawing();skipRelease_=true;}e->accept();}
 void MapCanvas::keyPressEvent(QKeyEvent *e){if(drawing_){if(e->key()==Qt::Key_Return||e->key()==Qt::Key_Enter){finishBoundaryDrawing();e->accept();return;}if(e->key()==Qt::Key_Backspace||e->key()==Qt::Key_Delete){undoBoundaryVertex();e->accept();return;}if(e->key()==Qt::Key_Escape){cancelBoundaryDrawing();e->accept();return;}}QOpenGLWidget::keyPressEvent(e);}
 void MapCanvas::leaveEvent(QEvent *e){if(!hoverHudId_.isEmpty()){hoverHudId_.clear();hudDirty_=true;update();}QOpenGLWidget::leaveEvent(e);}
-void MapCanvas::wheelEvent(QWheelEvent *e){beginInteraction();const auto worldBefore=world(lon_,lat_,zoom_)+e->position()-QPointF(width()/2.,height()/2.);const auto ll=unworld(worldBefore,zoom_);const double delta=e->angleDelta().y()?e->angleDelta().y()/240.:e->pixelDelta().y()/160.;zoom_=std::clamp(zoom_+delta,2.,20.);const auto center=unworld(world(ll.x(),ll.y(),zoom_)-e->position()+QPointF(width()/2.,height()/2.),zoom_);lon_=center.x();lat_=center.y();deferredNavSync_=true;syncVectorView();e->accept();}
+void MapCanvas::wheelEvent(QWheelEvent *e){
+ beginInteraction();
+ const double worldSzBefore=256.0*std::pow(2.0,zoom_);
+ QPointF worldBefore=world(lon_,lat_,zoom_)+e->position()-QPointF(width()/2.,height()/2.);
+ worldBefore.setY(std::clamp(worldBefore.y(),1.0,std::max(2.0,worldSzBefore-1.0)));
+ const auto ll=unworld(worldBefore,zoom_);
+ const double delta=e->angleDelta().y()?e->angleDelta().y()/240.:e->pixelDelta().y()/160.;
+ zoom_=std::clamp(zoom_+delta,minZoom(),20.);
+ const auto center=unworld(world(ll.x(),ll.y(),zoom_)-e->position()+QPointF(width()/2.,height()/2.),zoom_);
+ lon_=center.x();
+ lat_=clampCenterLat(center.y(),zoom_);
+ deferredNavSync_=true;
+ syncVectorView();
+ e->accept();
+}
 
 QJsonObject MapCanvas::draftState()const{if(!drawing_)return{};QJsonArray points;for(const auto &p:draft_)points.append(QJsonArray{p.x(),p.y()});return{{"active",true},{"points",points}};}
 void MapCanvas::restoreDraft(const QJsonObject &state){if(!state["active"].toBool())return;const auto rows=state["points"].toArray();if(rows.size()>512)return;QPolygonF points;for(const auto &v:rows){const auto p=v.toArray();if(p.size()!=2||!p[0].isDouble()||!p[1].isDouble()||std::abs(p[0].toDouble())>180||std::abs(p[1].toDouble())>85)return;points.append({p[0].toDouble(),p[1].toDouble()});}draft_=points;drawing_=true;hudDirty_=true;setCursor(Qt::CrossCursor);emit drawingChanged(true,draft_.size());update();}

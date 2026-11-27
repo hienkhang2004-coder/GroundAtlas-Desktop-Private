@@ -68,7 +68,10 @@ PerfTier classifyHardware(const QString &gpu, int threads, int ramGb) {
                       g.contains("rx 6") || g.contains("rx 7") || g.contains("rx 8") || g.contains("rx 9") ||
                       g.contains("radeon pro") || g.contains("quadro") || g.contains("arc a") || g.contains("arc b") ||
                       g.contains("apple m") || g.contains("apple gpu");
- if (highGpu || (threads >= 12 && ramGb >= 16 && !g.contains("uhd") && !g.contains("hd graphics"))) {
+ const bool integratedGpu = g.contains("uhd") || g.contains("hd graphics") || g.contains("iris") ||
+                            g.contains("radeon(tm) graphics") || g.contains("amd radeon graphics") ||
+                            g.contains("vega");
+ if (highGpu || (threads >= 12 && ramGb >= 16 && !integratedGpu)) {
   return PerfTier::Ultra;
  }
  if (threads <= 4 || ramGb <= 6 || g.contains("hd graphics 4") || g.contains("hd graphics 5")) {

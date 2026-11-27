@@ -107,6 +107,8 @@ private:
  QPointF world(double lon,double lat,double z) const;
  QPointF unworld(const QPointF &p,double z) const;
  QPointF screen(double lon,double lat) const;
+ double minZoom() const;
+ double clampCenterLat(double lat,double z) const;
  void cleanupVector();
  void syncVectorView();
  void applyVectorStyle();

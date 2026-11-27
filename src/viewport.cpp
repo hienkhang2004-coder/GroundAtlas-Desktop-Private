@@ -35,7 +35,11 @@ Viewport::Viewport(QWidget *parent):Viewport(QStandardPaths::writableLocation(QS
 Viewport::Viewport(const QString &cache,QWidget *parent):QOpenGLWidget(parent){
  auto format=QSurfaceFormat::defaultFormat();
  format.setVersion(3,3);
+#ifdef Q_OS_MACOS
  format.setProfile(QSurfaceFormat::CoreProfile);
+#else
+ format.setProfile(QSurfaceFormat::CompatibilityProfile);
+#endif
  format.setStencilBufferSize(8);
  setFormat(format);
  setMinimumSize(360,300);
@@ -86,16 +90,28 @@ Viewport::Viewport(const QString &cache,QWidget *parent):QOpenGLWidget(parent){
    const double k=1.0-std::exp(-18.0*dt);
    const double logCur=std::log(std::max(1e-7,camera_.zoom));
    const double logTgt=std::log(std::max(1e-7,dampTargetZoom_));
+   double attempted=camera_.zoom;
    if(std::abs(logTgt-logCur)<0.0008){
-    camera_.zoom=dampTargetZoom_;
+    attempted=dampTargetZoom_;
+    camera_.zoom=attempted;
     dampZoomActive_=false;
    }else{
-    camera_.zoom=std::clamp(std::exp(logCur+(logTgt-logCur)*k),1e-7,1e5);
+    attempted=std::clamp(std::exp(logCur+(logTgt-logCur)*k),1e-7,1e5);
+    camera_.zoom=attempted;
     active=true;
    }
    constrainZoom();
+   // If zoom hit min/max geographic bound, stop damping immediately instead of looping forever
+   if(std::abs(camera_.zoom-attempted)>attempted*1e-4){
+    dampTargetZoom_=camera_.zoom;
+    dampZoomActive_=false;
+    active=false;
+   }
    const auto after=groundPoint(dampAnchorScreen_);
-   panGround(dampAnchorLocal_,after);
+   const double maxJump=project_?std::max(25000.0,ga::envelopeRadius(project_->site)*60.0/std::max(1e-4,camera_.zoom)):1e8;
+   if(std::hypot(dampAnchorLocal_.x()-after.x(),dampAnchorLocal_.y()-after.y())<maxJump){
+    panGround(dampAnchorLocal_,after);
+   }
    planDirty_=contextViewDirty_=true;
   }
   if((std::abs(dampYawVel_)>0.08||std::abs(dampElVel_)>0.08)&&camera_.mode!="2d"){
@@ -422,7 +438,14 @@ void Viewport::resetView(){camera_.panX=camera_.panY=0;camera_.zoom=1;planDirty_
 void Viewport::zoomBy(double factor){beginInteraction();camera_.zoom=std::clamp(camera_.zoom*factor,1e-7,1e5);constrainZoom();planDirty_=contextViewDirty_=true;update();emit cameraChanged();}
 QJsonObject Viewport::geographicView()const{if(!project_)return{};const auto c=ga::contextCamera(project_->site,sceneCamera(),size());return{{"lat",c.lat},{"lon",c.lon},{"zoom",c.zoom+1}};}
 void Viewport::setGeographicView(double lat,double lon,double zoom){if(!project_)return;if(dirty_&&camera_.mode!="2d")rebuild();auto c=ga::cameraAtGeographicView(project_->site,sceneCamera(),size(),lat,lon,zoom);setCamera(c);navigationSize_=size();}
-void Viewport::constrainZoom(){if(!project_)return;const auto view=geographicView();const auto c=ga::cameraAtGeographicView(project_->site,sceneCamera(),size(),view["lat"].toDouble(),view["lon"].toDouble(),view["zoom"].toDouble());camera_.zoom=c.zoom;}
+void Viewport::constrainZoom(){
+ if(!project_)return;
+ const auto view=geographicView();
+ const double minZ=std::max(2.2,std::log2(std::max(1,height())/256.0)+0.35);
+ const double z=std::clamp(view["zoom"].toDouble(),minZ,20.0);
+ const auto c=ga::cameraAtGeographicView(project_->site,sceneCamera(),size(),view["lat"].toDouble(),view["lon"].toDouble(),z);
+ camera_.zoom=c.zoom;
+}
 ga::Camera Viewport::sceneCamera()const{auto c=camera_;c.stackHeight=stackHeight_;return c;}
 QMatrix4x4 Viewport::matrix() const{return project_?ga::sceneCameraMatrix(project_->site,sceneCamera(),double(width())/std::max(1,height())):camera_.matrix(500,double(width())/std::max(1,height()));}
 
@@ -1073,7 +1096,7 @@ void Viewport::renderScene3DToTarget(GLuint targetFbo,int pixelW,int pixelH,cons
  if(project_&&drawBasemap&&contextVisible_&&graphicsError_.isEmpty()){
   if(contextViewDirty_){basemap_->setCamera(ga::contextCamera(project_->site,sceneCamera(),logicalSize));contextViewDirty_=false;}
   basemap_->initialize(logicalSize,double(pixelW)/std::max(1,logicalSize.width()));
-  basemap_->render(logicalSize,double(pixelW)/std::max(1,logicalSize.width()),targetFbo);
+  basemap_->render(logicalSize,QSize(pixelW,pixelH),targetFbo);
   glBindFramebuffer(GL_FRAMEBUFFER,targetFbo);
   glViewport(0,0,pixelW,pixelH);
   glUseProgram(0);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,0);
@@ -2799,7 +2822,10 @@ void Viewport::wheelEvent(QWheelEvent *e){
  camera_.zoom=std::clamp(camera_.zoom*std::exp(delta*.13),1e-7,1e5);
  constrainZoom();
  const auto after=groundPoint(e->position());
- panGround(before,after);
+ const double maxJump=project_?std::max(25000.0,ga::envelopeRadius(project_->site)*60.0/std::max(1e-4,camera_.zoom)):1e8;
+ if(std::hypot(before.x()-after.x(),before.y()-after.y())<maxJump){
+  panGround(before,after);
+ }
  planDirty_=contextViewDirty_=true;
  update();
  emit cameraChanged();

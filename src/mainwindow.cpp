@@ -307,7 +307,7 @@ void MainWindow::buildUi() {
  connect(sourceAction, &QAction::triggered, this, &MainWindow::showSource);
  connect(about, &QAction::triggered, this, [this] {
   QMessageBox::about(this, "GroundAtlas Desktop",
-   trText("GroundAtlas Native 2.3.1 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
+   trText("GroundAtlas Native 2.3.2 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
           "Kiến trúc thuần mã máy (0% WebView/Electron) tự tối ưu theo phần cứng tới 500 Hz.\n"
           "• Bản quyền Per-Seat (1 Seat = 1 Máy · Lifetime 2.x · Ký số Ed25519 + Windows DPAPI + Offline 14 ngày).\n"
           "• Tự động kiểm tra & thông báo phiên bản cập nhật mới (miễn phí trọn đời dòng 2.x).\n"
@@ -315,7 +315,7 @@ void MainWindow::buildUi() {
           "• Lớp bật/tắt 1-Click Quy hoạch sử dụng đất (hỗ trợ nguồn XYZ tùy chỉnh) đè trên Bản đồ, 2D & 3D.\n"
           "• Nhập mô hình 3D trực tiếp từ SketchUp (.skp, .dae, .obj, .glb, .stl), đổ bóng 4096px, mặt cắt A–A' sống, Concept Massing FAR/BCR, và xuất Bộ hồ sơ 8 tệp 1-Click.\n\n"
           "Xem chi tiết bản quyền thư viện nguồn mở (Qt 6.8 LGPLv3, MapLibre BSD, Monocypher, OSM ODbL) tại mục Thông tin → Giấy phép nguồn mở.",
-          "GroundAtlas Native 2.3.1 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
+          "GroundAtlas Native 2.3.2 · 100% C++20 / Qt 6.8 / OpenGL 3.3 / MapLibre Native\n\n"
           "Pure compiled C++ workstation (0% WebView/Electron) with hardware auto-profiling up to 500 Hz.\n"
           "• Commercial Per-Seat Licensing (1 Seat = 1 Machine · Lifetime 2.x · Ed25519 + Windows DPAPI + 14-day offline lease).\n"
           "• Fast global OSM site loading (OSM API v0.6 + auto 2×2 tiling + Overpass failover).\n"
@@ -1654,8 +1654,8 @@ void MainWindow::buildUi() {
  auto *centerLay = new QVBoxLayout(centerCol);
  centerLay->setContentsMargins(0, 0, 0, 0);
  centerLay->setSpacing(0);
- viewport_ = new Viewport(dataDirectory_ + "/map-cache", centerCol);
- map_ = new MapCanvas(dataDirectory_ + "/map-cache", centerCol);
+ viewport_ = new Viewport(dataDirectory_ + "/map-cache/viewport", centerCol);
+ map_ = new MapCanvas(dataDirectory_ + "/map-cache/geographic", centerCol);
  views_ = new QStackedWidget(centerCol);
  views_->addWidget(map_);
  views_->addWidget(viewport_);
@@ -3235,7 +3235,7 @@ void MainWindow::markModified() {
 }
 
 void MainWindow::syncTitle() {
- setWindowTitle((modified_ ? "● " : "") + project_.site.name + " — GroundAtlas Native 2.3.1");
+ setWindowTitle((modified_ ? "● " : "") + project_.site.name + " — GroundAtlas Native 2.3.2");
 }
 
 bool MainWindow::maybeSave() {
@@ -3643,7 +3643,7 @@ void MainWindow::showUpdateDialog(bool userInitiated) {
  if (!license_) return;
  if (userInitiated) license_->bootstrap();
  const auto &off = license_->offer();
- const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.1") : QCoreApplication::applicationVersion();
+ const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.2") : QCoreApplication::applicationVersion();
  const bool hasUpdate = off.isUpdateAvailable(curVer);
 
  if (!hasUpdate) {
@@ -3694,7 +3694,7 @@ bool MainWindow::requireProFeature(const QString &viName, const QString &enName)
 void MainWindow::syncLicenseUi() {
  if (!licensePillBtn_ || !license_) return;
  const auto &off = license_->offer();
- const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.1") : QCoreApplication::applicationVersion();
+ const QString curVer = QCoreApplication::applicationVersion().isEmpty() ? QStringLiteral("2.3.2") : QCoreApplication::applicationVersion();
  const bool hasUpdate = off.isUpdateAvailable(curVer);
  if (updatePillBtn_) {
   updatePillBtn_->setVisible(hasUpdate);
@@ -3875,7 +3875,7 @@ void MainWindow::showCommandPalette() {
  entries.append({trText("Bật / Tắt Mặt cắt trực tiếp A–A' trên Viewport", "Toggle Live Section Cut A–A'"), "Cut A-A'", catTool, "live section mat cat truc tiep a-a", [this] { if (geographic_) showArchitecturalView(viewport_->camera()); viewport_->setSectionCutActive(!viewport_->isSectionCutActive()); }});
  entries.append({trText("Đổi Giao diện Sáng / Tối", "Toggle Light / Dark Theme"), "Theme", catTool, "dark light toi sang giao dien", [this] { setDarkTheme(!darkTheme_); persistPreferences(); }});
  entries.append({trText("Quản lý Bản quyền (Per-Seat) & Kích hoạt Key", "License & Per-Seat Activation"), "PRO 2.x", catTool, "license key pro seat ban quyen kich hoat", [this] { showLicenseDialog(); }});
- entries.append({trText("Kiểm tra bản cập nhật mới", "Check for Updates"), "v2.3.1", catTool, "update cap nhat phien ban moi", [this] { showUpdateDialog(true); }});
+ entries.append({trText("Kiểm tra bản cập nhật mới", "Check for Updates"), "v2.3.2", catTool, "update cap nhat phien ban moi", [this] { showUpdateDialog(true); }});
  entries.append({trText("Giấy phép Nguồn mở & Dữ liệu", "Open-Source & Data Licenses"), "LGPL/BSD", catTool, "oss license lgpl bsd odbl", [this] { showOpenSourceLicenses(); }});
  entries.append({trText("Cài đặt Hiệu năng & Màn hình (tới 500 Hz)", "Performance & Display Settings"), "Auto/Low/Med/Ultra", catTool, "settings cai dat hieu nang fps hz gpu", [this] { showSettings(); }});
  entries.append({trText("Bật / Tắt Địa hình 3D DEM", "Toggle 3D DEM Terrain"), "GEDTM30", catTool, "terrain dia hinh dem 3d", [this] { if (terrain3dCheck_) terrain3dCheck_->toggle(); }});
@@ -4540,7 +4540,7 @@ void MainWindow::dropEvent(QDropEvent *e) {
 QJsonObject MainWindow::diagnostics() const {
  const auto s = project_.stats();
  return {
-  {"application", "GroundAtlas Desktop"}, {"version", "2.3.1"}, {"native", true}, {"webview", false},
+  {"application", "GroundAtlas Desktop"}, {"version", "2.3.2"}, {"native", true}, {"webview", false},
   {"qt_version", qVersion()}, {"open_documents", documents_.size()}, {"imports", ga::geoJsonImportSummaries(project_)},
   {"models_3d", models3d_.size()}, {"sketchup_direct_api", ga::sketchUpDirectImportAvailable()},
   {"planning_level", activePlanningLevel_}, {"planning_custom_zones", planningCustom_.zones.size()},

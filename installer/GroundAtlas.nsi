@@ -4,8 +4,8 @@ ManifestDPIAware true
 SetCompressor /SOLID lzma
 
 !define APP_NAME "GroundAtlas Desktop"
-!define APP_VERSION "2.3.1"
-!define APP_VERSION_FOUR "2.3.1.0"
+!define APP_VERSION "2.3.2"
+!define APP_VERSION_FOUR "2.3.2.0"
 !define APP_PUBLISHER "GroundAtlas"
 !define APP_EXE "GroundAtlas.exe"
 !define APP_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\GroundAtlasDesktop"
