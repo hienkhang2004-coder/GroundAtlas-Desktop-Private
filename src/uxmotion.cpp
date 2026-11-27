@@ -132,28 +132,27 @@ void SlidingPillTrack::paintEvent(QPaintEvent *) {
 
  const QRectF outer = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
  const double outerR = outer.height() * 0.5;
- p.setPen(QPen(dark_ ? QColor("#36332e") : QColor("#e3dfd8"), 1.0));
- p.setBrush(dark_ ? QColor("#22201d") : QColor("#f2efe9"));
+ p.setPen(QPen(dark_ ? QColor("#363636") : QColor("#dfdfdf"), 1.0));
+ p.setBrush(dark_ ? QColor("#252525") : QColor("#ededed"));
  p.drawRoundedRect(outer, outerR, outerR);
 
  // Subtle hover capsule on inactive segment
  if (hoverRect_.isValid() && hoverRect_.width() > 2.0) {
   const double hr = hoverRect_.height() * 0.5;
   p.setPen(Qt::NoPen);
-  p.setBrush(dark_ ? QColor(255, 255, 255, 16) : QColor(26, 25, 24, 14));
+  p.setBrush(dark_ ? QColor(255, 255, 255, 16) : QColor(0, 0, 0, 10));
   p.drawRoundedRect(hoverRect_, hr, hr);
  }
 
- // Gliding active capsule
+ // Gliding active Spectrum 2 elevated capsule
  if (hasCurrent_ && currentRect_.width() > 2.0) {
   const double r = currentRect_.height() * 0.5;
-  // Soft ambient lift shadow beneath the active pill
   p.setPen(Qt::NoPen);
-  p.setBrush(dark_ ? QColor(0, 0, 0, 70) : QColor(26, 25, 24, 34));
+  p.setBrush(dark_ ? QColor(0, 0, 0, 72) : QColor(0, 0, 0, 22));
   p.drawRoundedRect(currentRect_.translated(0.0, 1.0), r, r);
 
-  p.setBrush(dark_ ? QColor("#f4f2ee") : QColor("#1a1918"));
-  p.setPen(QPen(dark_ ? QColor(255, 255, 255, 90) : QColor(255, 255, 255, 26), 0.8));
+  p.setBrush(dark_ ? QColor("#3a3a3a") : QColor("#ffffff"));
+  p.setPen(QPen(dark_ ? QColor(255, 255, 255, 26) : QColor(0, 0, 0, 18), 0.8));
   p.drawRoundedRect(currentRect_, r, r);
  }
 }
@@ -371,12 +370,12 @@ void FloatingToast::paintEvent(QPaintEvent *) {
 
  // Soft elevation shadow
  p.setPen(Qt::NoPen);
- p.setBrush(dark_ ? QColor(0, 0, 0, 115) : QColor(26, 25, 24, 34));
+ p.setBrush(dark_ ? QColor(0, 0, 0, 120) : QColor(0, 0, 0, 32));
  p.drawRoundedRect(card.translated(0.0, 2.5), r, r);
 
- // Frosted pill fill
- p.setBrush(dark_ ? QColor(28, 27, 24, 240) : QColor(26, 25, 24, 236));
- p.setPen(QPen(dark_ ? QColor(255, 255, 255, 28) : QColor(255, 255, 255, 24), 1.0));
+ // Spectrum 2 neutral floating pill fill
+ p.setBrush(dark_ ? QColor(36, 36, 36, 244) : QColor(28, 28, 28, 240));
+ p.setPen(QPen(dark_ ? QColor(255, 255, 255, 32) : QColor(255, 255, 255, 22), 1.0));
  p.drawRoundedRect(card, r, r);
 
  // Accent dot with subtle outer halo

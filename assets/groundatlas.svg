@@ -1,11 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
   <defs>
-    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a19c93"/><stop offset="1" stop-color="#9b958b"/></linearGradient>
-    <radialGradient id="shade" cx=".95" cy="1" r=".65"><stop stop-color="#a39e96"/><stop offset="1" stop-color="#a39e96" stop-opacity="0"/></radialGradient>
-    <radialGradient id="light" cx=".15" cy=".1" r=".57"><stop stop-color="#e9c8b5"/><stop offset="1" stop-color="#e9c8b5" stop-opacity="0"/></radialGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b63fb"/><stop offset="1" stop-color="#1d44d8"/></linearGradient>
+    <radialGradient id="light" cx=".2" cy=".1" r=".65"><stop stop-color="#93b4ff" stop-opacity=".42"/><stop offset="1" stop-color="#3b63fb" stop-opacity="0"/></radialGradient>
   </defs>
-  <rect width="48" height="48" rx="14" fill="url(#base)"/>
-  <rect width="48" height="48" rx="14" fill="url(#shade)"/>
-  <rect width="48" height="48" rx="14" fill="url(#light)"/>
-  <path transform="translate(6.4 6.4) scale(1.1)" d="m4 11 12-7 12 7-12 7-12-7Zm0 6 12 7 12-7M4 23l12 7 12-7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+  <rect width="48" height="48" rx="12" fill="url(#base)"/>
+  <rect width="48" height="48" rx="12" fill="url(#light)"/>
+  <path transform="translate(6.4 6.4) scale(1.1)" d="m4 11 12-7 12 7-12 7-12-7Zm0 6 12 7 12-7M4 23l12 7 12-7" fill="none" stroke="#fff" stroke-width="1.95" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

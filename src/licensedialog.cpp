@@ -37,21 +37,26 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
  setMinimumWidth(540);
  setMaximumWidth(620);
 
- const QString bg = dark_ ? "#1a1917" : "#faf8f5";
- const QString cardBg = dark_ ? "#23211e" : "#ffffff";
- const QString ink = dark_ ? "#f4f2ee" : "#1a1918";
- const QString muted = dark_ ? "#a8a29a" : "#6b665e";
- const QString border = dark_ ? "#38342f" : "#e5dfd5";
+ const QString bg = dark_ ? "#1b1b1b" : "#f8f8f8";
+ const QString cardBg = dark_ ? "#222222" : "#ffffff";
+ const QString ink = dark_ ? "#ebebeb" : "#222222";
+ const QString muted = dark_ ? "#969696" : "#6e6e6e";
+ const QString border = dark_ ? "#343434" : "#e1e1e1";
+ const QString accent = dark_ ? "#4b75ff" : "#3b63fb";
+ const QString accentHov = dark_ ? "#6389ff" : "#274dea";
  setStyleSheet(QString(
   "QDialog { background:%1; color:%2; }"
-  "QFrame#lic-card { background:%3; border:1px solid %4; border-radius:12px; }"
+  "QFrame#lic-card { background:%3; border:1px solid %4; border-radius:10px; }"
   "QLabel#muted { color:%5; font-size:12px; }"
-  "QLineEdit { background:%3; color:%2; border:1px solid %4; border-radius:8px; padding:9px 12px; font-family:Consolas,monospace; font-size:14px; }"
-  "QPushButton#accent-btn { background:#c45632; color:#ffffff; border:none; border-radius:8px; padding:9px 16px; font-weight:700; }"
-  "QPushButton#accent-btn:hover { background:#d4623d; }"
-  "QPushButton#sec-btn { background:%3; color:%2; border:1px solid %4; border-radius:8px; padding:8px 14px; font-weight:600; }"
-  "QPushButton#danger-btn { background:transparent; color:#dc2626; border:1px solid #dc2626; border-radius:8px; padding:8px 14px; font-weight:600; }"
- ).arg(bg, ink, cardBg, border, muted));
+  "QLineEdit { background:%3; color:%2; border:1px solid %4; border-radius:7px; padding:8px 12px; font-family:Consolas,'SF Mono',monospace; font-size:13.5px; }"
+  "QLineEdit:focus { border:1.5px solid %6; }"
+  "QPushButton#accent-btn { background:%6; color:#ffffff; border:none; border-radius:14px; min-height:18px; padding:7px 16px; font-weight:600; }"
+  "QPushButton#accent-btn:hover { background:%7; }"
+  "QPushButton#sec-btn { background:%3; color:%2; border:1px solid %4; border-radius:14px; min-height:18px; padding:6px 14px; font-weight:500; }"
+  "QPushButton#sec-btn:hover { border-color:%6; }"
+  "QPushButton#danger-btn { background:transparent; color:#d7373f; border:1px solid #d7373f; border-radius:14px; min-height:18px; padding:6px 14px; font-weight:600; }"
+  "QPushButton#danger-btn:hover { background:rgba(215,55,63,0.10); }"
+ ).arg(bg, ink, cardBg, border, muted, accent, accentHov));
 
  auto *root = new QVBoxLayout(this);
  root->setContentsMargins(18, 16, 18, 16);
@@ -61,13 +66,13 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
  if (!blockedFeature.isEmpty()) {
   auto *gate = new QFrame(this);
   gate->setObjectName("gate-banner");
-  gate->setStyleSheet(QString("QFrame#gate-banner{background:%1;border:1px solid #c45632;border-radius:10px;} QFrame#gate-banner QLabel{border:none;background:transparent;}")
-   .arg(dark_ ? "#2c1e19" : "#fff5f0"));
+  gate->setStyleSheet(QString("QFrame#gate-banner{background:%1;border:1px solid %2;border-radius:10px;} QFrame#gate-banner QLabel{border:none;background:transparent;}")
+   .arg(dark_ ? "#1e2742" : "#eef2ff", accent));
   auto *gl = new QVBoxLayout(gate);
   gl->setContentsMargins(14, 10, 14, 10);
   gl->setSpacing(4);
   auto *gt = new QLabel(trText("🔒 Tính năng Pro: ", "🔒 Pro Feature: ") + blockedFeature, gate);
-  gt->setStyleSheet("font-weight:700;color:#c45632;font-size:13px;");
+  gt->setStyleSheet(QString("font-weight:700;color:%1;font-size:13px;").arg(dark_ ? "#a8bfff" : "#274dea"));
   auto *gs = new QLabel(trText(
    "Bản Free cho phép xem 2D/3D, nạp OSM và đè quy hoạch không giới hạn. Nhập mã bản quyền trọn đời (1 Seat = 1 Máy) để mở khóa toàn bộ xuất file CAD / SketchUp / 4K / PDF / Import .SKP.",
    "Free edition includes unlimited 2D/3D viewing, live OSM loading & planning overlay. Activate a Lifetime 2.x Seat key (1 Seat = 1 Machine) to unlock all CAD/SketchUp/4K/PDF exports & .SKP import."), gate);
@@ -116,7 +121,7 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
 
  offerBanner_ = new QLabel(buyPanel_);
  offerBanner_->setWordWrap(true);
- offerBanner_->setStyleSheet("background:#c45632;color:#ffffff;padding:7px 10px;border-radius:8px;font-weight:700;font-size:12px;");
+ offerBanner_->setStyleSheet("background:#3b63fb;color:#ffffff;padding:7px 12px;border-radius:8px;font-weight:600;font-size:12px;");
  offerBanner_->hide();
  bpl->addWidget(offerBanner_);
 
@@ -125,9 +130,9 @@ LicenseDialog::LicenseDialog(ga::LicenseManager *manager,
  bpl->addWidget(batchLabel_);
 
  batchBar_ = new QProgressBar(buyPanel_);
- batchBar_->setFixedHeight(8);
+ batchBar_->setFixedHeight(6);
  batchBar_->setTextVisible(false);
- batchBar_->setStyleSheet("QProgressBar{background:rgba(196,86,50,0.16);border:none;border-radius:4px;} QProgressBar::chunk{background:#c45632;border-radius:4px;}");
+ batchBar_->setStyleSheet("QProgressBar{background:rgba(59,99,251,0.16);border:none;border-radius:3px;} QProgressBar::chunk{background:#3b63fb;border-radius:3px;}");
  bpl->addWidget(batchBar_);
 
  auto *pkgRow = new QGridLayout();
@@ -353,10 +358,10 @@ OpenSourceLicensesDialog::OpenSourceLicensesDialog(bool english, bool darkTheme,
  : QDialog(parent) {
  setWindowTitle(QString::fromUtf8(english ? "Open-Source & Data Licenses" : "Giấy phép Nguồn mở & Dữ liệu"));
  resize(640, 500);
- const QString bg = darkTheme ? "#1a1917" : "#faf8f5";
- const QString card = darkTheme ? "#23211e" : "#ffffff";
- const QString ink = darkTheme ? "#f4f2ee" : "#1a1918";
- const QString border = darkTheme ? "#38342f" : "#e5dfd5";
+ const QString bg = darkTheme ? "#1b1b1b" : "#f8f8f8";
+ const QString card = darkTheme ? "#222222" : "#ffffff";
+ const QString ink = darkTheme ? "#ebebeb" : "#222222";
+ const QString border = darkTheme ? "#343434" : "#e1e1e1";
  setStyleSheet(QString("QDialog{background:%1;color:%2;} QPlainTextEdit{background:%3;color:%2;border:1px solid %4;border-radius:10px;padding:10px;font-family:Consolas,monospace;font-size:12px;}")
   .arg(bg, ink, card, border));
 

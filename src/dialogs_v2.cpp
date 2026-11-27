@@ -89,7 +89,7 @@ StyleGalleryDialog::StyleGalleryDialog(const QString &activeStyle,
   const auto &pal = pals[i];
   auto *card = new QFrame(styleHost);
   card->setObjectName("v2-card");
-  if (pal.id == activeStyle) card->setStyleSheet("QFrame#v2-card{border:2px solid #c45632;}");
+  if (pal.id == activeStyle) card->setStyleSheet("QFrame#v2-card{border:2px solid #3b63fb;}");
   auto *cl = new QVBoxLayout(card);
   cl->setContentsMargins(10, 10, 10, 10);
   cl->setSpacing(6);
@@ -124,7 +124,7 @@ StyleGalleryDialog::StyleGalleryDialog(const QString &activeStyle,
   const auto &pal = kit.palette;
   auto *card = new QFrame(kitHost);
   card->setObjectName("v2-card");
-  if (kit.id == activeDiagram) card->setStyleSheet("QFrame#v2-card{border:2px solid #c45632;}");
+  if (kit.id == activeDiagram) card->setStyleSheet("QFrame#v2-card{border:2px solid #3b63fb;}");
   auto *cl = new QVBoxLayout(card);
   cl->setContentsMargins(10, 10, 10, 10);
   cl->setSpacing(6);
@@ -303,8 +303,8 @@ SettingsDialog::SettingsDialog(const Values &initial,
  auto *themeLbl = new QLabel(bi(en, "GIAO DIỆN", "APPEARANCE"), this);
  themeLbl->setObjectName("section");
  auto *themeBox = new QComboBox(this);
- themeBox->addItem(bi(en, "Giao diện Sáng (Warm Editorial)", "Light Theme (Warm Editorial)"), false);
- themeBox->addItem(bi(en, "Giao diện Tối (Architectural Dark)", "Dark Theme (Architectural Dark)"), true);
+ themeBox->addItem(bi(en, "Giao diện Sáng (Spectrum Light)", "Light Theme (Spectrum Light)"), false);
+ themeBox->addItem(bi(en, "Giao diện Tối (Spectrum Dark)", "Dark Theme (Spectrum Dark)"), true);
  themeBox->setCurrentIndex(initial.darkTheme ? 1 : 0);
 
  auto *row2 = new QHBoxLayout();

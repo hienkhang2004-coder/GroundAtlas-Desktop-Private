@@ -129,9 +129,9 @@ protected:
  void paintEvent(QPaintEvent *) override {
   QPainter p(this);
   p.setRenderHint(QPainter::Antialiasing);
-  p.fillRect(rect(), dark ? QColor("#181715") : QColor("#f3f4f6"));
-  p.setPen(QPen(dark ? QColor("#34312d") : QColor("#dfe3ea"), 1));
-  p.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 10, 10);
+  p.fillRect(rect(), dark ? QColor("#181818") : QColor("#f3f3f3"));
+  p.setPen(QPen(dark ? QColor("#323232") : QColor("#e1e1e1"), 1));
+  p.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 8, 8);
   if (!project) return;
 
   const auto toScreen = [&](QPointF w) { return mapToWidget(w); };
@@ -176,11 +176,11 @@ protected:
    const QPointF n(-dir.y() / len, dir.x() / len);
    QPolygonF lookZone{sA, sB, sB - n * 16.0, sA - n * 16.0};
    p.setPen(Qt::NoPen);
-   p.setBrush(dark ? QColor(224, 145, 115, 48) : QColor(196, 86, 52, 34));
+   p.setBrush(dark ? QColor(75, 117, 255, 44) : QColor(59, 99, 251, 30));
    p.drawPolygon(lookZone);
   }
 
-  const QColor accent = dark ? QColor("#e09173") : QColor("#b94726");
+  const QColor accent = dark ? QColor("#4b75ff") : QColor("#3b63fb");
   p.setPen(QPen(accent, 2.0, Qt::DashLine));
   p.drawLine(sA, sB);
 
@@ -296,12 +296,12 @@ public:
   p.save();
   p.setRenderHint(QPainter::Antialiasing);
   const bool useDark = dark && !forPrint;
-  const QColor bgCol = forPrint ? Qt::white : (useDark ? QColor("#161514") : QColor("#fcfbf8"));
-  const QColor gridCol = useDark ? QColor("#2a2825") : QColor("#ebe8e1");
-  const QColor mutedCol = useDark ? QColor("#9a948c") : QColor("#858c96");
-  const QColor inkCol = useDark ? QColor("#e8e4dc") : QColor("#2c2d30");
-  const QColor earthFill = useDark ? QColor("#2b2926") : QColor("#4a4a48");
-  const QColor earthStroke = useDark ? QColor("#9c958a") : QColor("#272726");
+  const QColor bgCol = forPrint ? Qt::white : (useDark ? QColor("#181818") : QColor("#ffffff"));
+  const QColor gridCol = useDark ? QColor("#2a2a2a") : QColor("#eaeaea");
+  const QColor mutedCol = useDark ? QColor("#969696") : QColor("#6e6e6e");
+  const QColor inkCol = useDark ? QColor("#ebebeb") : QColor("#222222");
+  const QColor earthFill = useDark ? QColor("#2a2a2a") : QColor("#464646");
+  const QColor earthStroke = useDark ? QColor("#8c8c8c") : QColor("#222222");
   p.fillRect(page, bgCol);
 
   if (data.length < 1.0) {

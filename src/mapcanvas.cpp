@@ -206,8 +206,8 @@ QPointF MapCanvas::geographicAt(const QPointF &point)const{return unworld(world(
 void MapCanvas::drawSelection(QPainter &p){
  p.save();
  const bool sat=(basemapMode_=="satellite");
- const QColor strokeCol=sat?QColor("#fb923c"):QColor("#c45632");
- const QColor fillCol=sat?QColor(251,146,60,34):QColor(196,86,50,20);
+ const QColor strokeCol=sat?QColor("#60a5fa"):QColor("#3b63fb");
+ const QColor fillCol=sat?QColor(96,165,250,36):QColor(59,99,251,22);
  const auto marker=screen(candidate_.lon,candidate_.lat);
  QPolygonF ring;
  const auto boundary=candidate_.boundary.isEmpty()?ga::primitiveBoundary(candidate_):candidate_.boundary;
@@ -229,10 +229,10 @@ void MapCanvas::drawSelection(QPainter &p){
   p.setFont(QFont("Segoe UI",8,QFont::DemiBold));
   const int tw=p.fontMetrics().horizontalAdvance(areaTxt)+16;
   const QRectF pill(marker.x()-tw/2.0,marker.y()+13.0,tw,20.0);
-  p.setPen(QPen(darkUi_||sat?QColor(255,255,255,48):QColor(196,86,50,70),1.0));
-  p.setBrush(darkUi_||sat?QColor(20,22,26,215):QColor(255,253,250,235));
+  p.setPen(QPen(darkUi_||sat?QColor(255,255,255,44):QColor(59,99,251,72),1.0));
+  p.setBrush(darkUi_||sat?QColor(24,24,24,224):QColor(255,255,255,240));
   p.drawRoundedRect(pill,10.0,10.0);
-  p.setPen(darkUi_||sat?QColor("#f5ece6"):QColor("#9a3412"));
+  p.setPen(darkUi_||sat?QColor("#e0eaff"):QColor("#274dea"));
   p.drawText(pill,Qt::AlignCenter,areaTxt);
  }
 
@@ -287,13 +287,13 @@ void MapCanvas::drawSelection(QPainter &p){
 void MapCanvas::drawHud(QPainter &ui){
  hudButtons_.clear();
  const bool dark=darkUi_||(basemapMode_=="satellite");
- const QColor glassBg=dark?QColor(22,24,29,224):QColor(255,253,250,234);
- const QColor glassBorder=dark?QColor(255,255,255,34):QColor(46,42,36,28);
- const QColor textPrimary=dark?QColor("#f5f3ef"):QColor("#1e1d1b");
- const QColor textMuted=dark?QColor("#a8a29e"):QColor("#6b665e");
- const QColor activeBg=dark?QColor("#e09173"):QColor("#c45632");
- const QColor activeFg=dark?QColor("#181615"):QColor("#ffffff");
- const QColor hoverBg=dark?QColor(255,255,255,22):QColor(196,86,50,22);
+ const QColor glassBg=dark?QColor(26,26,26,236):QColor(255,255,255,242);
+ const QColor glassBorder=dark?QColor(255,255,255,34):QColor(0,0,0,24);
+ const QColor textPrimary=dark?QColor("#ebebeb"):QColor("#222222");
+ const QColor textMuted=dark?QColor("#969696"):QColor("#6e6e6e");
+ const QColor activeBg=dark?QColor("#4b75ff"):QColor("#3b63fb");
+ const QColor activeFg=QColor("#ffffff");
+ const QColor hoverBg=dark?QColor(255,255,255,20):QColor(59,99,251,18);
 
  // 1. Top-Left Glass Status & Site Card (14,14 -> stays far above y=180 test zone!)
  const int cardW=std::min(312,std::max(210,width()-28));

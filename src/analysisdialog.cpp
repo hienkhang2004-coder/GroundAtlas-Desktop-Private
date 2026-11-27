@@ -32,22 +32,22 @@ public:
  void paint(QPainter &p,const QRectF &page,bool forPrint=false) const {
   const bool useDark=dark&&!forPrint;
   p.save();p.translate(page.topLeft());p.setRenderHint(QPainter::Antialiasing);const double w=page.width(),h=page.height();
-  p.fillRect(QRectF(0,0,w,h),useDark?QColor("#171615"):QColor("#fcfcf8"));
-  p.setPen(useDark?QColor("#f2efe9"):QColor("#364538"));p.setFont(QFont("Segoe UI",17,QFont::DemiBold));p.drawText(QRectF(30,24,w-60,58),Qt::TextWordWrap,chart.title);
-  p.setFont(QFont("Segoe UI",9));p.setPen(useDark?QColor("#a8a29a"):QColor("#7a8475"));p.drawText(QRectF(30,86,w-60,35),Qt::TextWordWrap,chart.unit);const QRectF plot(64,142,w-105,h-290);
+  p.fillRect(QRectF(0,0,w,h),useDark?QColor("#181818"):QColor("#ffffff"));
+  p.setPen(useDark?QColor("#ebebeb"):QColor("#222222"));p.setFont(QFont("Segoe UI",17,QFont::DemiBold));p.drawText(QRectF(30,24,w-60,58),Qt::TextWordWrap,chart.title);
+  p.setFont(QFont("Segoe UI",9));p.setPen(useDark?QColor("#969696"):QColor("#6e6e6e"));p.drawText(QRectF(30,86,w-60,35),Qt::TextWordWrap,chart.unit);const QRectF plot(64,142,w-105,h-290);
   if(chart.mode=="grid")drawGrid(p,plot,useDark);
   else if(chart.series.isEmpty()){p.drawText(plot,Qt::AlignCenter|Qt::TextWordWrap,chart.note);}
   else if(chart.mode=="rose")drawRose(p,plot,useDark);
   else drawCartesian(p,plot,useDark);
-  p.setFont(QFont("Segoe UI",8));p.setPen(useDark?QColor("#a8a29a"):QColor("#667261"));p.drawText(QRectF(30,h-122,w-60,52),Qt::TextWordWrap,chart.source);
-  p.setPen(useDark?QColor("#827c74"):QColor("#8a8e80"));p.drawText(QRectF(30,h-65,w-60,55),Qt::TextWordWrap,chart.note);p.restore();
+  p.setFont(QFont("Segoe UI",8));p.setPen(useDark?QColor("#969696"):QColor("#6e6e6e"));p.drawText(QRectF(30,h-122,w-60,52),Qt::TextWordWrap,chart.source);
+  p.setPen(useDark?QColor("#7c7c7c"):QColor("#808080"));p.drawText(QRectF(30,h-65,w-60,55),Qt::TextWordWrap,chart.note);p.restore();
  }
 protected:
  void paintEvent(QPaintEvent *)override{QPainter p(this);paint(p,rect(),false);}
 private:
  void drawCartesian(QPainter &p,const QRectF &plot,bool useDark)const{
   double low=0,high=0;for(const auto &s:chart.series)for(double v:s.values)if(std::isfinite(v)){low=std::min(low,v);high=std::max(high,v);}if(high==low)high=low+1;const double padding=(high-low)*.08;high+=padding;if(low<0)low-=padding;
-  const QColor gridC=useDark?QColor("#2c2a27"):QColor("#e4e7dc"),lblC=useDark?QColor("#b8b1a8"):QColor("#6c7866"),tickC=useDark?QColor("#9a948c"):QColor("#828d7c");
+  const QColor gridC=useDark?QColor("#2c2c2c"):QColor("#eaeaea"),lblC=useDark?QColor("#b5b5b5"):QColor("#555555"),tickC=useDark?QColor("#969696"):QColor("#6e6e6e");
   const auto y=[&](double value){return plot.bottom()-(value-low)/(high-low)*plot.height();};p.setFont(QFont("Segoe UI",8));for(int i=0;i<=4;++i){const double value=low+(high-low)*i/4,yy=y(value);p.setPen(QPen(gridC,1));p.drawLine(QPointF(plot.left(),yy),QPointF(plot.right(),yy));p.setPen(tickC);p.drawText(QRectF(0,yy-9,plot.left()-10,18),Qt::AlignRight|Qt::AlignVCenter,QString::number(value,'g',3));}
   const int count=chart.labels.size();if(count<1)return;const double slot=plot.width()/count;const auto x=[&](int i){return plot.left()+(i+.5)*slot;};for(int i=0;i<count;++i){p.setPen(lblC);p.save();p.translate(x(i),plot.bottom()+12);if(count>12||chart.labels[i].size()>9){p.rotate(-35);p.drawText(QRectF(-65,0,75,36),Qt::AlignRight|Qt::TextWordWrap,chart.labels[i]);}else p.drawText(QRectF(-slot/2,0,slot,32),Qt::AlignCenter|Qt::TextWordWrap,chart.labels[i]);p.restore();}
   for(int j=0;j<chart.series.size();++j){const auto &s=chart.series[j];p.setPen(QPen(s.color,2));p.setBrush(s.color);QPainterPath line;bool started=false;for(int i=0;i<std::min(count,int(s.values.size()));++i){const double v=s.values[i];if(!std::isfinite(v)){started=false;continue;}if(chart.mode=="line"){const QPointF q(x(i),y(v));if(started)line.lineTo(q);else line.moveTo(q);started=true;p.drawEllipse(q,2.5,2.5);}else{const double bw=slot*.7/chart.series.size(),xx=x(i)-slot*.35+j*bw;p.drawRoundedRect(QRectF(xx,std::min(y(v),y(0)),std::max(1.,bw-2),std::abs(y(v)-y(0))),2,2);}}if(chart.mode=="line"){p.setBrush(Qt::NoBrush);p.drawPath(line);}}

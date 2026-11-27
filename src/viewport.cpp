@@ -1077,7 +1077,7 @@ void Viewport::renderScene3DToTarget(GLuint targetFbo,int pixelW,int pixelH,cons
    glEnable(GL_BLEND);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ZERO,GL_ONE);
    glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
    tintShader_.bind();
-   tintShader_.setUniformValue("tintColor",0.08f,0.075f,0.07f,0.52f);
+   tintShader_.setUniformValue("tintColor",0.075f,0.075f,0.078f,0.52f);
    quadVao_.bind();
    glDrawArrays(GL_TRIANGLES,0,3);
    quadVao_.release();
@@ -1361,10 +1361,10 @@ void Viewport::paintGL(){
 void Viewport::drawOverlay(QPainter &p){
  const auto tr=[&](const char *vi,const char *en){return QString::fromUtf8(english_?en:vi);};
  const bool dark=darkUi_||palette_.paper.lightnessF()<.4;
- const QColor ink=dark?QColor("#f4f2ee"):QColor("#1a1918"),muted=dark?QColor("#a8a29a"):QColor("#6b6863");
- const QColor glassFill=dark?QColor(23,22,20,232):QColor(255,255,255,238);
- const QColor glassBorder=dark?QColor(72,68,62,220):QColor(222,217,209,235);
- const QColor accentCol=dark?QColor("#e09173"):QColor("#c45632");
+ const QColor ink=dark?QColor("#ebebeb"):QColor("#222222"),muted=dark?QColor("#969696"):QColor("#6e6e6e");
+ const QColor glassFill=dark?QColor(28,28,28,238):QColor(255,255,255,242);
+ const QColor glassBorder=dark?QColor(66,66,66,225):QColor(218,218,218,240);
+ const QColor accentCol=dark?QColor("#4b75ff"):QColor("#3b63fb");
 
  const auto m=matrix();
  auto worldToScreen=[&](const QPointF &local,double z=0.4,bool *ok=nullptr){
@@ -1996,7 +1996,7 @@ void Viewport::drawOverlay(QPainter &p){
    const QPointF sA2=worldToScreen(sectionA_+wn*bandM,1.2);
    const QPointF sB2=worldToScreen(sectionB_+wn*bandM,1.2);
    p.setPen(Qt::NoPen);
-   p.setBrush(dark?QColor(224,145,115,44):QColor(196,86,50,34));
+   p.setBrush(dark?QColor(75,117,255,44):QColor(59,99,251,30));
    p.drawPolygon(QPolygonF{sA,sB,sB2,sA2});
    // Look-direction arrows near A and A'
    const QPointF nS(sA2-sA);
@@ -2017,7 +2017,7 @@ void Viewport::drawOverlay(QPainter &p){
   p.setPen(QPen(dark?QColor(0,0,0,150):QColor(255,255,255,190),4.4));
   p.drawLine(sA,sB);
   const bool lineHi=(dragSectionPart_==3||hoverSectionPart_==3);
-  p.setPen(QPen(lineHi?QColor("#f97316"):accentCol,lineHi?3.0:2.2,Qt::DashDotLine));
+  p.setPen(QPen(lineHi?QColor("#6389ff"):accentCol,lineHi?3.0:2.2,Qt::DashDotLine));
   p.drawLine(sA,sB);
 
   // Midpoint length badge
@@ -2028,7 +2028,7 @@ void Viewport::drawOverlay(QPainter &p){
    const int tw=p.fontMetrics().horizontalAdvance(lTxt)+14;
    const QPointF mid=(sA+sB)*0.5;
    const QRectF lp(mid.x()-tw*0.5,mid.y()-10,tw,20);
-   p.setPen(QPen(accentCol,1.1));p.setBrush(dark?QColor(24,22,20,235):QColor(255,253,250,242));
+   p.setPen(QPen(accentCol,1.1));p.setBrush(dark?QColor(24,24,24,238):QColor(255,255,255,244));
    p.drawRoundedRect(lp,10,10);
    p.setPen(accentCol);p.drawText(lp,Qt::AlignCenter,lTxt);
   }
@@ -2036,8 +2036,8 @@ void Viewport::drawOverlay(QPainter &p){
   // Interactive draggable A and A' circular handles
   auto drawSecHandle=[&](const QPointF &pt,const QString &tag,bool hi){
    const double r=hi?12.5:10.5;
-   p.setPen(QPen(dark?QColor("#181715"):Qt::white,2.2));
-   p.setBrush(hi?QColor("#f97316"):accentCol);
+   p.setPen(QPen(dark?QColor("#181818"):Qt::white,2.2));
+   p.setBrush(hi?QColor("#6389ff"):accentCol);
    p.drawEllipse(pt,r,r);
    p.setFont(QFont("Segoe UI",8.2,QFont::Bold));
    p.setPen(Qt::white);
@@ -2122,43 +2122,43 @@ void Viewport::drawOverlay(QPainter &p){
   }
   const double yaw=camera_.mode=="2d"?0:camera_.yaw*M_PI/180.0;
   const QPointF tip=c+QPointF(std::sin(yaw)*11.5,-std::cos(yaw)*11.5),side=c+QPointF(std::cos(yaw)*3.6,std::sin(yaw)*3.6);
-  p.setPen(Qt::NoPen);p.setBrush(QColor("#d95b38"));p.drawPolygon(QPolygonF{tip,side,c-(side-c)});
-  p.setBrush(dark?QColor("#78736b"):QColor("#a8a39b"));p.drawPolygon(QPolygonF{c-(tip-c),side,c-(side-c)});
+  p.setPen(Qt::NoPen);p.setBrush(QColor("#e34850"));p.drawPolygon(QPolygonF{tip,side,c-(side-c)});
+  p.setBrush(dark?QColor("#6e6e6e"):QColor("#a8a8a8"));p.drawPolygon(QPolygonF{c-(tip-c),side,c-(side-c)});
   p.setBrush(glassFill);p.drawEllipse(c,2.1,2.1);
   if(compassHovered_){
    const QString cTip=tr("Xoay về hướng Bắc (0°)","Align North (0°)");
    p.setFont(QFont("Segoe UI",7.6,QFont::DemiBold));
    const int cw=p.fontMetrics().horizontalAdvance(cTip)+16;
    const QRectF tipRect(compPill.right()-cw,compPill.bottom()+6,cw,22);
-   p.setPen(Qt::NoPen);p.setBrush(QColor(24,23,21,232));p.drawRoundedRect(tipRect,6,6);
-   p.setPen(QColor("#faf8f5"));p.drawText(tipRect,Qt::AlignCenter,cTip);
+   p.setPen(Qt::NoPen);p.setBrush(QColor(24,24,24,238));p.drawRoundedRect(tipRect,6,6);
+   p.setPen(QColor("#ffffff"));p.drawText(tipRect,Qt::AlignCenter,cTip);
   }
   p.restore();
  }
 
- // Interactive Bottom-Center Floating Glassmorphic Viewport Dock
+ // Interactive Bottom-Center Floating Spectrum 2 Viewport Dock
  if(hudDockVisible_&&project_&&!drawingPlot_&&width()>=540){
   const QRectF dock=dockPillRect();
   const auto items=dockItems();
   p.save();
   // Ambient layered shadow
   p.setPen(Qt::NoPen);
-  p.setBrush(dark?QColor(0,0,0,105):QColor(26,25,24,26));
-  p.drawRoundedRect(dock.translated(0,3.5),19,19);
-  // Frosted glass pill container
+  p.setBrush(dark?QColor(0,0,0,108):QColor(0,0,0,22));
+  p.drawRoundedRect(dock.translated(0,3.0),18,18);
+  // Frosted Spectrum neutral pill container
   p.setPen(QPen(glassBorder,1.0));
   p.setBrush(glassFill);
-  p.drawRoundedRect(dock,19,19);
+  p.drawRoundedRect(dock,18,18);
   // Delicate top rim highlight
-  p.setPen(QPen(dark?QColor(255,255,255,22):QColor(255,255,255,180),1.0));
+  p.setPen(QPen(dark?QColor(255,255,255,20):QColor(255,255,255,190),1.0));
   p.drawLine(QPointF(dock.left()+18,dock.top()+1),QPointF(dock.right()-18,dock.top()+1));
 
   // Subtle vertical separators between groups (after index 2 and index 5)
-  p.setPen(QPen(dark?QColor(255,255,255,24):QColor(26,25,24,22),1.0));
+  p.setPen(QPen(dark?QColor(255,255,255,24):QColor(0,0,0,20),1.0));
   for(int sepIdx:{2,5}){
    if(sepIdx+1<items.size()){
     const double sx=(items[sepIdx].rect.right()+items[sepIdx+1].rect.left())*0.5;
-    p.drawLine(QPointF(sx,dock.top()+9),QPointF(sx,dock.bottom()-9));
+    p.drawLine(QPointF(sx,dock.top()+8),QPointF(sx,dock.bottom()-8));
    }
   }
 
@@ -2166,15 +2166,15 @@ void Viewport::drawOverlay(QPainter &p){
    const bool hov=(it.id==hoveredDockId_);
    if(it.active){
     p.setPen(Qt::NoPen);
-    p.setBrush(it.accent?accentCol:(dark?QColor("#f4f2ee"):QColor("#1a1918")));
+    p.setBrush(it.accent?accentCol:(dark?QColor("#3c3c3c"):QColor("#222222")));
     p.drawRoundedRect(it.rect,13,13);
    }else if(hov){
     p.setPen(Qt::NoPen);
-    p.setBrush(dark?QColor(255,255,255,22):QColor(26,25,24,18));
+    p.setBrush(dark?QColor(255,255,255,20):QColor(0,0,0,14));
     p.drawRoundedRect(it.rect,13,13);
    }
    p.setFont(QFont("Segoe UI",it.id=="zoom-in"||it.id=="zoom-out"?10.5:8.2,it.active?QFont::Bold:QFont::DemiBold));
-   const QColor txtCol=it.active?(it.accent?QColor("#ffffff"):(dark?QColor("#151413"):QColor("#ffffff"))):(hov?ink:muted);
+   const QColor txtCol=it.active?QColor("#ffffff"):(hov?ink:muted);
    p.setPen(txtCol);
    p.drawText(it.rect,Qt::AlignCenter,it.label);
 
@@ -2183,8 +2183,8 @@ void Viewport::drawOverlay(QPainter &p){
     p.setFont(QFont("Segoe UI",7.6,QFont::DemiBold));
     const int tw=p.fontMetrics().horizontalAdvance(it.tip)+16;
     const QRectF tipBox(std::clamp(it.rect.center().x()-tw*0.5,12.0,width()-tw-12.0),dock.top()-28,tw,22);
-    p.setPen(Qt::NoPen);p.setBrush(QColor(24,23,21,235));p.drawRoundedRect(tipBox,6,6);
-    p.setPen(QColor("#faf8f5"));p.drawText(tipBox,Qt::AlignCenter,it.tip);
+    p.setPen(Qt::NoPen);p.setBrush(QColor(24,24,24,238));p.drawRoundedRect(tipBox,6,6);
+    p.setPen(QColor("#ffffff"));p.drawText(tipBox,Qt::AlignCenter,it.tip);
    }
   }
   p.restore();
@@ -2230,7 +2230,7 @@ QRectF Viewport::compassRect() const {
 }
 
 QRectF Viewport::dockPillRect() const {
- const double dockW=580.0,dockH=38.0;
+ const double dockW=576.0,dockH=36.0;
  return QRectF((width()-dockW)*0.5,height()-dockH-14.0,dockW,dockH);
 }
 
